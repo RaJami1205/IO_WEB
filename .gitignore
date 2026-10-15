@@ -1,0 +1,44 @@
+
+# =====================================
+# IO WEB - Git Ignore
+# =====================================
+
+# Node.js / React / Vite
+**/node_modules/
+**/dist/
+**/build/
+**/coverage/
+**/*.log
+
+# Python / FastAPI
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/.coverage
+**/htmlcov/
+
+# Environment variables and secrets
+**/.env
+**/.env.*
+!**/.env.example
+AGENTS.md
+
+# Deployment
+.vercel/
+**/.vercel/
+
+# IDE
+.idea/
+.vscode/
+
+# Operating systems
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
