@@ -1,0 +1,36 @@
+name: PR policy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions: {}
+
+jobs:
+  branch-policy:
+    name: branch-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate source and destination
+        shell: python
+        run: |
+          import json
+          import os
+          import sys
+
+          with open(os.environ['GITHUB_EVENT_PATH'], encoding='utf-8') as event_file:
+              pull_request = json.load(event_file)['pull_request']
+
+          source = pull_request['head']['ref']
+          destination = pull_request['base']['ref']
+          allowed = (
+              destination == 'dev'
+              and source.startswith('feature/')
+              and len(source) > len('feature/')
+          ) or (source == 'dev' and destination == 'main')
+
+          if not allowed:
+              print('::error::Flujo permitido: feature/* -> dev o dev -> main.')
+              sys.exit(1)
+          print('Politica de ramas: flujo permitido.')
