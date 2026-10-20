@@ -1,0 +1,339 @@
+.pagina-series-deportivas {
+  width: 100%;
+  align-self: stretch;
+  min-height: 100%;
+  padding: 45px 20px 70px;
+  background: #f8fafc;
+}
+
+.contenedor-series-deportivas {
+  width: 100%;
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+/* Título de la página */
+
+.encabezado-series {
+  margin-bottom: 30px;
+}
+
+.etiqueta-proyecto {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.encabezado-series h1 {
+  font-size: 34px;
+  color: #14213a;
+  margin: 12px 0;
+}
+
+.encabezado-series p {
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 650px;
+}
+
+/* Formulario principal */
+
+.formulario-series {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.04);
+}
+
+.seccion-configuracion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.seccion-configuracion h2,
+.seccion-formulario h2 {
+  color: #172033;
+  font-size: 19px;
+  margin: 0 0 10px;
+}
+
+.seccion-configuracion p,
+.encabezado-localias p {
+  color: #64748b;
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Botones para archivos JSON */
+
+.acciones-archivo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.acciones-archivo input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.etiqueta-archivo,
+.boton-secundario {
+  display: inline-block;
+  padding: 11px 17px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: white;
+  color: #263854;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+
+.etiqueta-archivo:hover,
+.boton-secundario:hover {
+  background: #eff6ff;
+}
+
+.acciones-archivo:focus-within .etiqueta-archivo {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+/* Campos del formulario */
+
+.seccion-formulario {
+  padding: 28px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.grupo-campos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 22px;
+}
+
+.campo-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.campo-formulario label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.campo-formulario input,
+.campo-formulario select,
+.tarjeta-partido select {
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: white;
+  color: #172033;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.campo-formulario input:focus,
+.campo-formulario select:focus,
+.tarjeta-partido select:focus {
+  outline: 2px solid #93c5fd;
+  border-color: #2563eb;
+}
+
+.campo-formulario small {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Localías de cada juego */
+
+.encabezado-localias {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.contador-partidos {
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.lista-partidos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+  margin-top: 23px;
+}
+
+.tarjeta-partido {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.tarjeta-partido label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.explicacion-localias {
+  color: #64748b;
+  font-size: 12px;
+  margin: 17px 0 0;
+}
+
+/*tabla de repuestas*/
+.tabla-probabilidades {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.tabla-probabilidades td {
+  border: 1px solid #cbd5e1;
+  padding: 15px;
+  background: #f8fafc;
+}
+/* Mensajes de validación */
+
+.mensaje-error,
+.mensaje-exito {
+  padding: 13px 16px;
+  margin: 20px 0 0;
+  border-radius: 7px;
+  font-size: 13px;
+}
+
+.mensaje-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.mensaje-exito {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+/* Botón de cálculo */
+
+.acciones-formulario {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 25px;
+}
+
+.boton-calcular {
+  padding: 13px 25px;
+  background: #2563eb;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.boton-calcular:hover {
+  background: #1d4ed8;
+}
+
+.boton-calcular:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Resultado recibido del backend */
+
+.seccion-resultado {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 25px;
+  margin-top: 25px;
+}
+
+.seccion-resultado h2 {
+  font-size: 19px;
+  margin-top: 0;
+}
+
+.seccion-resultado pre {
+  overflow-x: auto;
+  padding: 18px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Pantallas pequeñas */
+
+@media (max-width: 800px) {
+  .seccion-configuracion {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .grupo-campos {
+    grid-template-columns: 1fr;
+  }
+
+  .lista-partidos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .formulario-series {
+    padding: 20px;
+  }
+
+  .lista-partidos {
+    grid-template-columns: 1fr;
+  }
+
+  .acciones-formulario {
+    justify-content: stretch;
+  }
+
+  .boton-calcular {
+    width: 100%;
+  }
+}
