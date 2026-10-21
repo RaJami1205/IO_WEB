@@ -247,24 +247,25 @@ function SeriesDeportivas() {
       cambiarCalculando(true);
 
       // Enviar configuración a FastAPI.
-      const respuesta = await fetch("/api/series-deportivas", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const respuesta = await fetch(
+        "http://127.0.0.1:8000/api/series-deportivas",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(configuracion),
         },
-        body: JSON.stringify(configuracion),
-      });
+      );
 
       // Verificar respuesta HTTP.
       if (!respuesta.ok) {
         throw new Error(`El servidor devolvió el error ${respuesta.status}.`);
       }
 
-      // Recibir matriz de probabilidades.
-      const resultado: unknown = await respuesta.json();
+      const datos = await respuesta.json();
 
-      // Guardar la matriz recibida.
-      const matriz = resultado as number[][];
+      const matriz: number[][] = datos.tablas.F;
 
       cambiarTablaProbabilidades(matriz);
       cambiarCeldasVisibles(0);
