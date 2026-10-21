@@ -1,6 +1,6 @@
 import type { ChangeEvent, FormEvent } from "react";
 import "../estilos/SeriesDeportivas.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 // Estructura exacta que espera el backend.
 type ConfiguracionSerie = {
@@ -235,53 +235,8 @@ function SeriesDeportivas() {
     }
   }
 
-  async function calcularSerie(evento: FormEvent<HTMLFormElement>) {
-    evento.preventDefault();
-    limpiarMensajes();
-
-    try {
-      const configuracion = obtenerConfiguracionActual();
-
-      // Cantidad de victorias necesarias para ganar la serie.
-      const victoriasNecesarias = Math.ceil(configuracion.juegos / 2);
-
-      // Simular la matriz que devolverá el backend.
-      const ejemplo = generarTablaEjemplo(victoriasNecesarias);
-
-      cambiarTablaProbabilidades(ejemplo);
-      cambiarCeldasVisibles(0);
-
-      const totalCeldas = ejemplo.reduce(
-        (total, fila) => total + fila.length,
-        0,
-      );
-
-      for (let i = 1; i <= totalCeldas; i++) {
-        await new Promise((resolver) => setTimeout(resolver, 1000));
-        cambiarCeldasVisibles(i);
-      }
-
-      cambiarMensajeExito("Tabla de prueba generada correctamente.");
-    } catch (error) {
-      cambiarMensajeError(
-        error instanceof Error ? error.message : "Ocurrió un error.",
-      );
-    }
-  }
-
-  // Genera probabilidades ficticias para probar la tabla.
-  function generarTablaEjemplo(tamanoMatriz: number): number[][] {
-    return Array.from({ length: tamanoMatriz }, (_, numeroFila) =>
-      Array.from({ length: tamanoMatriz }, (_, numeroColumna) =>
-        Number(
-          ((numeroColumna + 1) / (numeroFila + numeroColumna + 2)).toFixed(5),
-        ),
-      ),
-    );
-  }
-
   // Envía la configuración al backend y recibe la matriz.
-  async function calcularSerie1(evento: FormEvent<HTMLFormElement>) {
+  async function calcularSerie(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     limpiarMensajes();
 
@@ -309,7 +264,7 @@ function SeriesDeportivas() {
       const resultado: unknown = await respuesta.json();
 
       // Guardar la matriz recibida.
-     const matriz = resultado as number[][];
+      const matriz = resultado as number[][];
 
       cambiarTablaProbabilidades(matriz);
       cambiarCeldasVisibles(0);
