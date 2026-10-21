@@ -1,9 +1,28 @@
+
+import { Routes, Route } from "react-router-dom";
+
+import VentanaBienvenida, {
+  PlantillaGeneral,
+} from "./componentes/VentanaBienvenida";
+
+import SeriesDeportivas from "./componentes/SeriesDeportivas";
+
 function App() {
   return (
-    <main>
-      <h1>IO WEB TEST DE FRONTEND</h1>
-    </main>
-  )
+    <PlantillaGeneral>
+      <Routes>
+        <Route
+          path="/"
+          element={<VentanaBienvenida />}
+        />
+
+        <Route
+          path="/series-deportivas"
+          element={<SeriesDeportivas />}
+        />
+      </Routes>
+    </PlantillaGeneral>
+  );
 }
 
-export default App
+export default App;

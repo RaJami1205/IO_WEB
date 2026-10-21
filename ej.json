@@ -1,0 +1,7 @@
+{
+  "algoritmo": "series-deportivas",
+  "juegos": 5,
+  "ph": 0.58,
+  "pr": 0.45,
+  "formato": [true, true, false, false, false]
+}
