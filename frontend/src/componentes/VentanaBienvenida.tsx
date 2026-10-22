@@ -8,7 +8,7 @@ const modulos = [
     nombreCorto: "Reemplazo",
     descripcion:
       "Determina cuándo reemplazar un equipo para minimizar los costos durante un período.",
-    ruta: null,
+    ruta: "/remplazo-equipos",
   },
   {
     numero: "02",

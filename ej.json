@@ -1,7 +1,11 @@
 {
-  "algoritmo": "series-deportivas",
-  "juegos": 7,
-  "ph": 0.58,
-  "pr": 0.45,
-  "formato": [true, true, false, false, false, true, true]
+  "algoritmo": "reemplazo-equipos",
+  "costoInicial": 500,
+  "plazo": 5,
+  "vidaUtil": 3,
+  "periodos": [
+    { "reventa": 400, "mantenimiento": 30 },
+    { "reventa": 300, "mantenimiento": 40 },
+    { "reventa": 250, "mantenimiento": 60 }
+  ]
 }
