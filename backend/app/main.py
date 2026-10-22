@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
 from app.algoritmos.series_deportivas.router import router as series_router
+from app.algoritmos.reemplazo_equipos.router import router as replacement_router
 from app.core.config import get_cors_origins
 
 
@@ -17,6 +18,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router)
     app.include_router(series_router)
+    app.include_router(replacement_router)
     return app
 
 

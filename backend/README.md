@@ -124,3 +124,92 @@ Retroceder o reiniciar puede hacerse reproduciendo el prefijo de cambios.
 Las referencias académicas disponibles son dos ejercicios del Quiz 6.
 El caso JSON anterior es una referencia derivada, no un tercer ejercicio
 de clase. Sigue pendiente documentar ese tercer ejercicio académico.
+
+## Reemplazo de Equipos (P1)
+
+`POST /api/reemplazo-equipos?offset=0&limite=100` conserva el cuerpo oficial:
+
+```json
+{
+  "algoritmo": "reemplazo-equipos",
+  "costoInicial": 500,
+  "plazo": 5,
+  "vidaUtil": 3,
+  "periodos": [
+    {"reventa": 400, "mantenimiento": 30},
+    {"reventa": 300, "mantenimiento": 40},
+    {"reventa": 250, "mantenimiento": 60}
+  ]
+}
+```
+
+```json
+$body = @{
+    algoritmo = "reemplazo-equipos"
+    costoInicial = 500
+    plazo = 5
+    vidaUtil = 3
+    periodos = @(
+        @{ reventa = 400; mantenimiento = 30 }
+        @{ reventa = 300; mantenimiento = 40 }
+        @{ reventa = 250; mantenimiento = 60 }
+    )
+} | ConvertTo-Json -Depth 10
+
+$respuesta = Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8000/api/reemplazo-equipos" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $body
+
+$respuesta.resultado | ConvertTo-Json -Depth 10
+$respuesta.tablas | ConvertTo-Json -Depth 10
+$respuesta.pasos.Count
+
+$pagina = Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8000/api/reemplazo-equipos?offset=1&limite=1" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $body
+
+$pagina.resultado | ConvertTo-Json -Depth 10
+```
+
+Los modelos rechazan campos adicionales, booleanos numéricos, cadenas numéricas,
+valores no finitos y dimensiones inválidas. Se admiten importes negativos y
+reventas mayores que la adquisición: no se imponen supuestos económicos extra.
+Los errores de validación de este endpoint conservan HTTP 422 y `detail` con
+`loc`, `msg` y `type`; se omite la entrada inválida para no serializar NaN/Infinity.
+Este tratamiento es local al módulo y no cambia Series Deportivas ni Health.
+
+El solver puro calcula C(d), G(t), todas las decisiones empatadas y N(t), con
+N(T)=1. El conteo usa enteros Python. Para la página, un DFS ordenado salta ramas
+completas mediante N(t); nunca enumera todos los planes antes de aplicar offset.
+`limite` va de 1 a 100; offset fuera del total devuelve una lista vacía.
+El último instante del plan es el fin del horizonte, no un reemplazo adicional.
+
+La aritmética utiliza `Fraction(str(numero))` de la biblioteca estándar:
+representa exactamente los decimales interpretados por Python, sin redondeos
+intermedios, contexto limitado de Decimal ni tolerancias para los empates.
+Este endpoint lee los tokens fraccionarios JSON como Decimal antes de validar,
+para conservar sus dígitos sin pasar por float. No acepta cadenas numéricas.
+No puede recuperar precisión perdida previamente en el cliente que envía JSON.
+Los enteros se conservan como enteros. En la frontera de salida, las fracciones
+no enteras se convierten a float, con la aproximación binaria habitual de JSON
+en el navegador. Se rechaza con 422 un resultado fraccionario que desborde a
+infinito o se reduzca a cero por subdesbordamiento. Las decisiones y empates
+se determinan antes de esta conversión. Los enteros fuera del rango seguro de
+JavaScript pueden perder precisión al ser leídos por el cliente; este contrato
+exige números JSON y no permite sustituirlos por cadenas.
+
+La respuesta contiene directamente las tres tablas finales y la página de planes.
+La reproducción opcional parte de listas pendientes y aplica solo `cambios`;
+las evaluaciones no modifican tablas. Hay
+`2*L + sum(min(L,T-t), t=0..T-1) + T + 3` eventos, incluidos reconstrucción y
+resultado, sin duplicar los planes en la traza.
+
+Referencias: el JSON oficial derivado produce costo 640, tres planes y 26 eventos;
+el ejercicio manuscrito de clase produce costo 30400 y tres planes.
+Faltan otros dos ejercicios realmente resueltos en clase para completar el
+requisito académico. El caso cero de T=30/L=10 tiene 531372800 planes y se prueba
+consultando páginas al inicio y al final.
