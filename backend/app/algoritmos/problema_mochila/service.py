@@ -9,8 +9,10 @@ def json_numbers(value):
     if isinstance(value, Fraction):
         if value.denominator == 1:
             return value.numerator
-        number = float(value)
-        # con los limites del schema nunca deberia pasar pero se protege la salida
+        try:
+            number = float(value)
+        except OverflowError as exc:
+            raise ValueError("El resultado excede el rango numérico JSON soportado.") from exc
         if not math.isfinite(number) or (number == 0 and value != 0):
             raise ValueError("El resultado excede el rango numérico JSON soportado.")
         return number
