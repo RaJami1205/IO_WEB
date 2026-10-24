@@ -40,7 +40,7 @@ const modulos = [
     nombreCorto: "Mochila",
     descripcion:
       "Maximiza el valor de los objetos seleccionados respetando una capacidad.",
-    ruta: null,
+    ruta: "/Mochila",
   },
 ];
 
