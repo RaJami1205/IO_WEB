@@ -6,7 +6,7 @@ import VentanaBienvenida, {
 
 import SeriesDeportivas from "./componentes/SeriesDeportivas";
 import RemplazoEquipos from "./componentes/RemplazoEquipos";
-
+import Mochila from "./componentes/Mochila";
 function App() {
   return (
     <PlantillaGeneral>
@@ -16,6 +16,8 @@ function App() {
         <Route path="/series-deportivas" element={<SeriesDeportivas />} />
 
         <Route path="/remplazo-equipos" element={<RemplazoEquipos />} />
+
+        <Route path="/Mochila" element={<Mochila />} />
       </Routes>
     </PlantillaGeneral>
   );

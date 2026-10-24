@@ -1333,8 +1333,18 @@ body {
 
 .io-welcome {
   width: 100%;
-  padding: 90px 0;
+  min-height: calc(100vh - 160px);
+  padding: 90px 20px;
   text-align: center;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-image: url("./image.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .io-welcome-label {
