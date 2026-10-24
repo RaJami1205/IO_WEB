@@ -412,7 +412,7 @@ a.nav-link:hover,
   justify-content: space-between;
   gap: 12px;
   padding: 15px 18px;
-  background: #eaf1f6;
+  background: #3a7dad;
   border-bottom: 1px solid #dbe6ee;
   color: #587084;
   font-size: 11px;
@@ -692,7 +692,7 @@ a.nav-link:hover,
    ========================================= */
 
 .about-section {
-  background: white;
+  background: rgb(30, 143, 203);
 }
 
 .about-grid {
