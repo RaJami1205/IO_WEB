@@ -45,6 +45,17 @@ Las pruebas usan TestClient, sin servidor externo, y cubren el contrato
 Pydantic, OpenAPI, documentación y CORS autorizado/no autorizado.
 Las pruebas de Series Deportivas también verifican cálculos y reproducción de eventos.
 
+Las pruebas de Mochila comparan el solver contra fuerza bruta en las tres variantes
+y verifican la tabla de referencia, los empates y la reproducción de eventos.
+
+Para ejecutar solo un módulo o un grupo de pruebas por nombre:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q tests/test_mochila.py
+.\.venv\Scripts\python.exe -m pytest -q tests/test_mochila.py -k empate
+.\.venv\Scripts\python.exe -m pytest -v tests/test_mochila.py
+```
+
 ## CORS
 
 El origen predeterminado es `http://localhost:5173`. Para reemplazar la lista,
@@ -213,3 +224,88 @@ el ejercicio manuscrito de clase produce costo 30400 y tres planes.
 Faltan otros dos ejercicios realmente resueltos en clase para completar el
 requisito académico. El caso cero de T=30/L=10 tiene 531372800 planes y se prueba
 consultando páginas al inicio y al final.
+
+## Problema de la Mochila (P5)
+
+`POST /api/problema-mochila` recibe el contrato oficial:
+
+```json
+{
+  "algoritmo": "mochila",
+  "variante": "acotada",
+  "capacidad": 15,
+  "objetos": [
+    { "nombre": "Linterna", "peso": 2, "valor": 10, "cantidad": 3 },
+    { "nombre": "Agua",     "peso": 5, "valor": 18, "cantidad": 2 },
+    { "nombre": "Botiquín", "peso": 4, "valor": 15, "cantidad": 1 }
+  ]
+}
+```
+
+`variante` es `"0-1"`, `"acotada"` o `"no-acotada"`. `capacidad` va de 1 a 20 y
+`objetos` tiene de 1 a 10 elementos. `peso` es un entero positivo y `valor` un
+número positivo de hasta 6 decimales y como máximo 10^12. `cantidad` son las
+copias disponibles de cada objeto: es obligatoria en la variante acotada y se
+ignora en las otras dos. Los nombres no pueden repetirse, sin distinguir
+mayúsculas. Los modelos rechazan con 422 campos adicionales, booleanos
+numéricos, cadenas numéricas y valores no finitos. Como en Reemplazo de Equipos,
+`detail` conserva `loc`, `msg` y `type` y omite la entrada inválida.
+
+Ejemplo PowerShell con el servidor iniciado:
+
+```powershell
+$body = @{
+    algoritmo = "mochila"
+    variante = "acotada"
+    capacidad = 15
+    objetos = @(
+        @{ nombre = "Linterna"; peso = 2; valor = 10; cantidad = 3 }
+        @{ nombre = "Agua"; peso = 5; valor = 18; cantidad = 2 }
+        @{ nombre = "Botiquín"; peso = 4; valor = 15; cantidad = 1 }
+    )
+} | ConvertTo-Json -Depth 10
+
+$respuesta = Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8000/api/problema-mochila" `
+    -Method Post `
+    -ContentType "application/json; charset=utf-8" `
+    -Body ([System.Text.Encoding]::UTF8.GetBytes($body))
+
+$respuesta.resultado | ConvertTo-Json -Depth 10
+$respuesta.tablas.V | ConvertTo-Json -Compress
+$respuesta.pasos.Count
+```
+
+El cuerpo se envía como bytes UTF-8 para que los acentos, como en "Botiquín",
+lleguen correctamente desde Windows PowerShell.
+
+V(c, j) es el mejor valor con capacidad c usando los objetos 1..j:
+V(c, j) = max_k [k·v_j + V(c − k·w_j, j − 1)]. La variante solo cambia el
+máximo de copias k: 1 en 0/1, `cantidad` en acotada y sin tope en no acotada.
+La tabla se llena columna por columna y la solución se reconstruye desde
+V(C, n) hacia atrás.
+
+La respuesta incluye:
+
+- `resultado`: valor óptimo, peso usado, la selección con copias, peso y valor
+  de cada objeto, `hayEmpates` y la conclusión.
+- `tablas`: `V` con los valores, `decision` con las copias k de cada casilla,
+  `opciones` con los k empatados y `marca`. Las filas son la capacidad 0..C y
+  las columnas son los objetos, donde la columna 0 significa "sin objetos".
+- `pasos` y `metadatos` de los ejes.
+
+`marca` es `verde` si la casilla usa el objeto de su columna (k ≥ 1) y `rojo` si
+copia el valor de la izquierda (k = 0). Ante un empate se elige el menor k: la
+casilla queda en rojo y se informa `hayEmpates` si el empate afecta a la
+solución final. No se paginan soluciones alternativas.
+
+La aritmética usa `Fraction` y los tokens JSON se leen como Decimal, igual que
+en Reemplazo de Equipos, así que los empates se detectan sin tolerancias. En la
+salida, las fracciones no enteras se convierten a float. Desde celdas
+pendientes, aplicar solo `cambios` en orden reconstruye V. Hay
+`2 + 2·C·n + n + 1` eventos: dos de inicialización, una evaluación y una
+actualización por casilla, una reconstrucción por objeto y el resultado.
+
+Referencias: el JSON oficial produce 43 en 0/1, 63 en acotada y 70 en no acotada,
+con 96 eventos. El caso 0/1 con C = 4, A (2, 5), B (2, 5) y C (4, 10) tiene un
+empate y devuelve {A, B}. Falta contrastar el módulo con ejercicios resueltos en clase.
