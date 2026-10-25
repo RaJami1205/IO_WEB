@@ -306,6 +306,77 @@ pendientes, aplicar solo `cambios` en orden reconstruye V. Hay
 `2 + 2·C·n + n + 1` eventos: dos de inicialización, una evaluación y una
 actualización por casilla, una reconstrucción por objeto y el resultado.
 
-Referencias: el JSON oficial produce 43 en 0/1, 63 en acotada y 70 en no acotada,
-con 96 eventos. El caso 0/1 con C = 4, A (2, 5), B (2, 5) y C (4, 10) tiene un
-empate y devuelve {A, B}. Falta contrastar el módulo con ejercicios resueltos en clase.
+
+## Árbol Binario de Búsqueda Óptimo (P3)
+
+`POST /api/abb-optimo` recibe el contrato oficial:
+
+```json
+{
+  "algoritmo": "abb-optimo",
+  "llaves": [
+    { "llave": "while", "peso": 12 },
+    { "llave": "if",    "peso": 20 },
+    { "llave": "do",    "peso": 5.5 },
+    { "llave": "for",   "peso": 8 }
+  ]
+}
+```
+
+`llaves` tiene de 1 a 10 elementos. `llave` es un texto de 1 a 40 caracteres y
+`peso` un número positivo de hasta 6 decimales y como máximo 10^12. Las llaves se
+reciben en el orden del usuario y el programa las ordena alfabéticamente sin
+distinguir mayúsculas e ignorando acentos; la ñ es una letra aparte, después de
+la n. Por eso "if" e "IF", o "árbol" y "Arbol", cuentan como llaves repetidas y se
+rechazan con 422, mientras que "año" y "ano" son llaves distintas. Los modelos
+rechazan campos adicionales, booleanos numéricos, cadenas numéricas y valores no
+finitos; `detail` conserva `loc`, `msg` y `type` y omite la entrada inválida.
+
+Ejemplo PowerShell con el servidor iniciado:
+
+```powershell
+$body = @{
+    algoritmo = "abb-optimo"
+    llaves = @(
+        @{ llave = "while"; peso = 12 }
+        @{ llave = "if"; peso = 20 }
+        @{ llave = "do"; peso = 5.5 }
+        @{ llave = "for"; peso = 8 }
+    )
+} | ConvertTo-Json -Depth 10
+
+$respuesta = Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8000/api/abb-optimo" `
+    -Method Post `
+    -ContentType "application/json; charset=utf-8" `
+    -Body ([System.Text.Encoding]::UTF8.GetBytes($body))
+
+$respuesta.resultado | ConvertTo-Json -Depth 10
+$respuesta.tablas.A | ConvertTo-Json -Compress
+$respuesta.tablas.R | ConvertTo-Json -Compress
+$respuesta.pasos.Count
+```
+
+Cada peso se convierte en probabilidad, peso / suma de pesos, y se redondea a dos
+decimales con redondeo escolar (0.125 → 0.13), como en clase. El resto del cálculo
+usa esas probabilidades redondeadas, por lo que los valores de A tienen dos
+decimales exactos y las probabilidades pueden no sumar exactamente 1.
+
+A[i][j] es el costo promedio mínimo del subárbol con las llaves i..j y R[i][j] la
+llave elegida como raíz. Las tablas tienen filas i = 1..n+1 y columnas j = 0..n:
+
+- A[i][i−1] = 0 (diagonal de ceros).
+- A[i][i] = p_i y R[i][i] = i (diagonal de probabilidades).
+- A[i][j] = min_k [A[i][k−1] + A[k+1][j]] + (p_i + … + p_j), con k = i..j.
+
+Se llena por grupos de 2, 3, …, n llaves. Ante un empate se elige el menor k.
+
+La respuesta incluye:
+
+- `resultado`: el costo promedio óptimo A[1][n], la llave raíz R[1][n], las llaves
+  ordenadas con su peso, probabilidad exacta y probabilidad redondeada, y la conclusión.
+- `tablas`: `A` y `R`. La posición 0 de cada lista es la fila 1 (`filasDesde: 1`,
+  `columnasDesde: 0`) y las casillas que no aplican van en `null`.
+- `pasos` y `metadatos`.
+
+No se construye el árbol en la respuesta.
