@@ -1,333 +1,231 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import "../estilos/RemplazoEquipos.css";
 
-type Variante = "acotada" | "0/1" | "no acotada";
-
-type ObjetoMochila = {
-  nombre: string;
-  peso: number;
-  valor: number;
-  cantidad?: number;
+type Equipo = {
+  valorVenta: number;
+  costoMantenimiento: number;
 };
 
-type ConfiguracionMochila = {
-  algoritmo: "mochila";
-  variante: Variante;
-  capacidad: number;
-  objetos: ObjetoMochila[];
+type ConfiguracionRemplazo = {
+  algoritmo: "reemplazo-equipos";
+  costoInicial: number;
+  plazo: number;
+  vidaUtil: number;
+  periodos: { reventa: number; mantenimiento: number }[];
 };
 
-// La salida conserva los nombres originales del JSON que envía FastAPI.
-// No se supone una estructura fija para resultado, tablas ni metadatos.
-type RespuestaMochila = Record<string, unknown>;
+type RespuestaReemplazo = {
+  algoritmo?: string;
+  resultado: {
+    costoMinimo: number;
+    cantidadPlanesOptimos: number;
+    planesOptimos: number[][];
+    conclusion: string;
+    paginacion?: {
+      offset: number;
+      limite: number;
+      devueltos: number;
+      hayMas: boolean;
+    };
+  };
+  tablas: {
+    costosPorDuracion: number[];
+    G: number[];
+    siguientes: number[][];
+  };
+  pasos?: unknown[];
+  metadatos?: {
+    instanteInicial?: number;
+    instanteFinal?: number;
+    costosIndexadosDesde?: number;
+    planesIncluyenInicioFin?: boolean;
+  };
+  planesIncluyenInicioFin?: boolean;
+};
 
-// Mantener la ruta que ya utilizabas; confirma las mayúsculas con tu backend.
-const API_MOCHILA = "http://127.0.0.1:8000/api/Mochila";
+const API_REEMPLAZO = "http://127.0.0.1:8000/api/reemplazo-equipos";
 
-/** Identifica un objeto JSON (excluye null y arreglos). */
 function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
-
-/** Verifica que los datos de entrada cumplan el formato del problema Mochila. */
-function validarConfiguracion(datos: unknown): ConfiguracionMochila {
-  if (!esObjeto(datos)) throw new Error("El JSON debe ser un objeto.");
-  if (datos.algoritmo !== "mochila") {
-    throw new Error("El campo algoritmo debe ser 'mochila'.");
+// eslint-disable-next-line react-refresh/only-export-components
+export function validarConfiguracion(datos: unknown): ConfiguracionRemplazo {
+  if (!esObjeto(datos)) {
+    throw new Error("El JSON debe contener un objeto.");
   }
-  if (!["acotada", "0/1", "no acotada"].includes(String(datos.variante))) {
-    throw new Error("Variante incorrecta.");
+  if (datos.algoritmo !== "reemplazo-equipos") {
+    throw new Error("El algoritmo debe ser 'reemplazo-equipos'.");
   }
   if (
-    typeof datos.capacidad !== "number" ||
-    !Number.isFinite(datos.capacidad) ||
-    datos.capacidad < 0
+    typeof datos.costoInicial !== "number" ||
+    !Number.isFinite(datos.costoInicial) ||
+    datos.costoInicial < 0
   ) {
-    throw new Error("La capacidad debe ser un número no negativo.");
+    throw new Error("El costo inicial debe ser un número no negativo.");
   }
-  if (!Array.isArray(datos.objetos) || datos.objetos.length === 0) {
-    throw new Error("Debes proporcionar al menos un objeto.");
+  if (
+    typeof datos.plazo !== "number" ||
+    !Number.isInteger(datos.plazo) ||
+    datos.plazo < 1
+  ) {
+    throw new Error("El plazo debe ser un entero mayor que cero.");
   }
-
-  for (const [indice, objeto] of datos.objetos.entries()) {
-    if (
-      !esObjeto(objeto) ||
-      typeof objeto.nombre !== "string" ||
-      objeto.nombre.trim() === "" ||
-      typeof objeto.peso !== "number" ||
-      !Number.isFinite(objeto.peso) ||
-      objeto.peso <= 0 ||
-      typeof objeto.valor !== "number" ||
-      !Number.isFinite(objeto.valor) ||
-      objeto.valor <= 0
-    ) {
-      throw new Error(
-        `El objeto ${indice + 1} debe tener nombre, peso y valor válidos.`,
-      );
-    }
-    if (
-      datos.variante === "acotada" &&
-      (typeof objeto.cantidad !== "number" ||
-        !Number.isInteger(objeto.cantidad) ||
-        objeto.cantidad <= 0)
-    ) {
-      throw new Error(
-        `El objeto ${indice + 1} necesita cantidad entera mayor que cero.`,
-      );
-    }
+  if (
+    typeof datos.vidaUtil !== "number" ||
+    !Number.isInteger(datos.vidaUtil) ||
+    datos.vidaUtil < 1
+  ) {
+    throw new Error("La vida útil debe ser un entero mayor que cero.");
   }
-
-  return datos as ConfiguracionMochila;
+  if (
+    !Array.isArray(datos.periodos) ||
+    datos.periodos.length !== datos.vidaUtil ||
+    !datos.periodos.every(
+      (periodo: unknown) =>
+        esObjeto(periodo) &&
+        typeof periodo.reventa === "number" &&
+        Number.isFinite(periodo.reventa) &&
+        periodo.reventa >= 0 &&
+        typeof periodo.mantenimiento === "number" &&
+        Number.isFinite(periodo.mantenimiento) &&
+        periodo.mantenimiento >= 0,
+    )
+  ) {
+    throw new Error("Debe haber un período válido por cada año de vida útil.");
+  }
+  return datos as ConfiguracionRemplazo;
 }
 
-/** Acepta cualquier JSON de respuesta que sea objeto, sin inventar campos. */
-function validarRespuesta(datos: unknown): RespuestaMochila {
-  if (!esObjeto(datos)) {
-    throw new Error("El servidor debe devolver un objeto JSON.");
+function validarRespuesta(datos: unknown): RespuestaReemplazo {
+  if (
+    !esObjeto(datos) ||
+    !esObjeto(datos.resultado) ||
+    !esObjeto(datos.tablas)
+  ) {
+    throw new Error("El backend no devolvió resultado y tablas válidos.");
   }
-  return datos;
+  const resultado = datos.resultado;
+  const tablas = datos.tablas;
+  const numeroValido = (valor: unknown): valor is number =>
+    typeof valor === "number" && Number.isFinite(valor);
+  const arregloNumeros = (valor: unknown): valor is number[] =>
+    Array.isArray(valor) && valor.every(numeroValido);
+  const arregloRutas = (valor: unknown): valor is number[][] =>
+    Array.isArray(valor) && valor.every(arregloNumeros);
+
+  if (
+    !numeroValido(resultado.costoMinimo) ||
+    !numeroValido(resultado.cantidadPlanesOptimos) ||
+    !arregloRutas(resultado.planesOptimos) ||
+    typeof resultado.conclusion !== "string" ||
+    !arregloNumeros(tablas.costosPorDuracion) ||
+    !arregloNumeros(tablas.G) ||
+    !arregloRutas(tablas.siguientes)
+  ) {
+    throw new Error("La respuesta del backend tiene tipos inesperados.");
+  }
+  return datos as RespuestaReemplazo;
 }
 
-/** Convierte un dato simple en texto. Los objetos se muestran con sus propias claves. */
-function textoCelda(valor: unknown): string {
-  if (valor === null) return "null";
-  if (valor === undefined) return "—";
-  if (typeof valor === "object") return JSON.stringify(valor);
-  return String(valor);
+function formatearNumero(valor: number): string {
+  return new Intl.NumberFormat("es-CR", {
+    maximumFractionDigits: 6,
+  }).format(valor);
 }
 
-/**
- * Pinta un campo del backend usando exactamente su nombre.
- * Soporta: valor simple, objeto, arreglo, lista de objetos o matriz numérica.
- * No dibuja ninguna propiedad llamada 'pasos'.
- */
-function CampoResultado({ nombre, dato }: { nombre: string; dato: unknown }) {
-  if (nombre === "pasos") return null;
-
-  if (Array.isArray(dato)) {
-    if (dato.length === 0) {
-      return (
-        <div className="mochila-bloque">
-          <h4>{nombre}</h4>
-          <p>Sin registros.</p>
-        </div>
-      );
-    }
-
-    // Tabla bidimensional: tantas filas y columnas como devuelve FastAPI.
-    if (dato.every(Array.isArray)) {
-      const filas = dato as unknown[][];
-      const columnas = Math.max(0, ...filas.map((fila) => fila.length));
-      return (
-        <div className="mochila-bloque">
-          <h4>{nombre}</h4>
-          <div className="mochila-desborde">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fila / Columna</th>
-                  {Array.from({ length: columnas }, (_, i) => (
-                    <th key={i}>{i}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filas.map((fila, i) => (
-                  <tr key={i}>
-                    <th>{i}</th>
-                    {Array.from({ length: columnas }, (_, j) => (
-                      <td key={j}>{textoCelda(fila[j])}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
-    }
-
-    // Lista de objetos: columnas obtenidas de los nombres reales del JSON.
-    if (dato.every(esObjeto)) {
-      const registros = dato as Record<string, unknown>[];
-      const columnas = Array.from(
-        new Set(
-          registros.flatMap((registro) =>
-            Object.keys(registro).filter((clave) => clave !== "pasos"),
-          ),
-        ),
-      );
-      return (
-        <div className="mochila-bloque">
-          <h4>{nombre}</h4>
-          <div className="mochila-desborde">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  {columnas.map((clave) => (
-                    <th key={clave}>{clave}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {registros.map((registro, i) => (
-                  <tr key={i}>
-                    <th>{i + 1}</th>
-                    {columnas.map((clave) => (
-                      <td key={clave}>{textoCelda(registro[clave])}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
-    }
-
-    // Arreglo plano: se presenta completo con índices visibles.
-    return (
-      <div className="mochila-bloque">
-        <h4>{nombre}</h4>
-        <div className="mochila-desborde">
-          <table>
-            <thead>
-              <tr>
-                <th>Índice</th>
-                <th>Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dato.map((valor, i) => (
-                <tr key={i}>
-                  <th>{i}</th>
-                  <td>{textoCelda(valor)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
-
-  if (esObjeto(dato)) {
-    return (
-      <div className="mochila-bloque">
-        <h3>{nombre}</h3>
-        <div className="mochila-subcampos">
-          {Object.entries(dato)
-            .filter(([clave]) => clave !== "pasos")
-            .map(([clave, valor]) => (
-              <CampoResultado key={clave} nombre={clave} dato={valor} />
-            ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mochila-dato">
-      <span>{nombre}</span>
-      <strong>{textoCelda(dato)}</strong>
-    </div>
-  );
+function formatearRuta(plan: number[]): string {
+  return plan.join(" → ");
 }
 
-export default function Mochila() {
-  const [variante, cambiarVariante] = useState<Variante>("0/1");
-  const [capacidad, cambiarCapacidad] = useState("");
-  const [nombre, cambiarNombre] = useState("");
-  const [peso, cambiarPeso] = useState("");
-  const [valor, cambiarValor] = useState("");
-  const [cantidad, cambiarCantidad] = useState("");
-  const [listaEquipos, cambiarListaEquipos] = useState<ObjetoMochila[]>([]);
-  const [indicesSeleccionados, cambiarIndicesSeleccionados] = useState<
-    number[]
-  >([]);
-  const [soloSeleccionados, cambiarSoloSeleccionados] = useState(false);
-  const [mostrarTodoResultado, cambiarMostrarTodoResultado] = useState(true);
+export default function RemplazoEquipos() {
+  const [costoInicial, cambiarCostoInicial] = useState("");
+  const [plazo, cambiarPlazo] = useState("");
+  const [vidaUtil, cambiarVidaUtil] = useState("");
+  const [valorVenta, cambiarValorVenta] = useState("");
+  const [costoMantenimiento, cambiarCostoMantenimiento] = useState("");
+  const [listaEquipos, cambiarListaEquipos] = useState<Equipo[]>([]);
   const [resultadoBackend, cambiarResultadoBackend] =
-    useState<RespuestaMochila | null>(null);
+    useState<RespuestaReemplazo | null>(null);
   const [calculando, cambiarCalculando] = useState(false);
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
 
-  /** Limpia avisos y datos calculados para no mostrar resultados desactualizados. */
   function limpiarResultados() {
     cambiarMensajeError("");
     cambiarMensajeExito("");
     cambiarResultadoBackend(null);
   }
 
-  /** Carga el JSON de entrada y selecciona todos los objetos importados. */
   async function cargarArchivoJson(evento: ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     if (!archivo) return;
     limpiarResultados();
+
     try {
       const configuracion = validarConfiguracion(
         JSON.parse(await archivo.text()),
       );
-      cambiarVariante(configuracion.variante);
-      cambiarCapacidad(String(configuracion.capacidad));
-      cambiarListaEquipos(configuracion.objetos);
-      cambiarIndicesSeleccionados(configuracion.objetos.map((_, i) => i));
-      cambiarNombre("");
-      cambiarPeso("");
-      cambiarValor("");
-      cambiarCantidad("");
-      cambiarMensajeExito("Configuración cargada.");
+      cambiarCostoInicial(String(configuracion.costoInicial));
+      cambiarPlazo(String(configuracion.plazo));
+      cambiarVidaUtil(String(configuracion.vidaUtil));
+      cambiarListaEquipos(
+        configuracion.periodos.map((periodo) => ({
+          valorVenta: periodo.reventa,
+          costoMantenimiento: periodo.mantenimiento,
+        })),
+      );
+      cambiarValorVenta("");
+      cambiarCostoMantenimiento("");
+      cambiarMensajeExito("Archivo JSON cargado correctamente.");
     } catch (error) {
       cambiarMensajeError(
-        error instanceof Error ? error.message : "No se pudo cargar el JSON.",
+        error instanceof Error ? error.message : "No se pudo leer el JSON.",
       );
+    } finally {
+      evento.target.value = "";
     }
-    evento.target.value = "";
   }
 
-  /**
-   * Genera el cuerpo del POST con los campos exactos del backend:
-   * algoritmo, variante, capacidad y objetos (nombre, peso, valor, cantidad).
-   * Solo incluye los objetos marcados en la tabla.
-   */
-  function obtenerConfiguracionActual(): ConfiguracionMochila {
-    if (capacidad.trim() === "")
-      throw new Error("Ingresa la capacidad de la mochila.");
-    const objetos = listaEquipos
-      .filter((_, i) => indicesSeleccionados.includes(i))
-      .map((objeto) =>
-        variante === "acotada"
-          ? { ...objeto }
-          : { nombre: objeto.nombre, peso: objeto.peso, valor: objeto.valor },
-      );
-
+  function obtenerConfiguracionActual(): ConfiguracionRemplazo {
+    if (
+      costoInicial.trim() === "" ||
+      plazo.trim() === "" ||
+      vidaUtil.trim() === ""
+    ) {
+      throw new Error("Completa costo inicial, plazo y vida útil.");
+    }
+    if (listaEquipos.length !== Number(vidaUtil)) {
+      throw new Error("Agrega un registro por cada año de vida útil.");
+    }
     return validarConfiguracion({
-      algoritmo: "mochila",
-      variante,
-      capacidad: Number(capacidad),
-      objetos,
+      algoritmo: "reemplazo-equipos",
+      costoInicial: Number(costoInicial),
+      plazo: Number(plazo),
+      vidaUtil: Number(vidaUtil),
+      periodos: listaEquipos.map((equipo) => ({
+        reventa: equipo.valorVenta,
+        mantenimiento: equipo.costoMantenimiento,
+      })),
     });
   }
 
-  /** Descarga el JSON de entrada que se enviaría al servidor. */
   function guardarConfiguracionJson() {
     cambiarMensajeError("");
+    cambiarMensajeExito("");
     try {
-      const archivo = new Blob(
-        [JSON.stringify(obtenerConfiguracionActual(), null, 2)],
-        { type: "application/json" },
+      const contenido = JSON.stringify(obtenerConfiguracionActual(), null, 2);
+      const url = URL.createObjectURL(
+        new Blob([contenido], { type: "application/json" }),
       );
-      const url = URL.createObjectURL(archivo);
       const enlace = document.createElement("a");
       enlace.href = url;
-      enlace.download = "mochila.json";
+      enlace.download = "reemplazo-equipos.json";
       document.body.appendChild(enlace);
       enlace.click();
       enlace.remove();
       URL.revokeObjectURL(url);
-      cambiarMensajeExito("Archivo JSON guardado.");
+      cambiarMensajeExito("Configuración JSON guardada.");
     } catch (error) {
       cambiarMensajeError(
         error instanceof Error ? error.message : "No se pudo guardar.",
@@ -335,324 +233,421 @@ export default function Mochila() {
     }
   }
 
-  /** Valida y agrega un objeto a la tabla; cantidad solo se exige en acotada. */
   function agregarEquipo(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     limpiarResultados();
-    if (
-      nombre.trim() === "" ||
-      peso.trim() === "" ||
-      valor.trim() === "" ||
-      !Number.isFinite(Number(peso)) ||
-      Number(peso) <= 0 ||
-      !Number.isFinite(Number(valor)) ||
-      Number(valor) <= 0
-    ) {
-      cambiarMensajeError("Ingresa nombre, peso y valor válidos.");
+
+    if (!Number.isInteger(Number(vidaUtil)) || Number(vidaUtil) < 1) {
+      cambiarMensajeError("Primero ingresa una vida útil válida.");
+      return;
+    }
+    if (listaEquipos.length >= Number(vidaUtil)) {
+      cambiarMensajeError("Ya agregaste todos los períodos de vida útil.");
       return;
     }
     if (
-      variante === "acotada" &&
-      (cantidad.trim() === "" ||
-        !Number.isInteger(Number(cantidad)) ||
-        Number(cantidad) <= 0)
+      valorVenta.trim() === "" ||
+      costoMantenimiento.trim() === "" ||
+      !Number.isFinite(Number(valorVenta)) ||
+      !Number.isFinite(Number(costoMantenimiento)) ||
+      Number(valorVenta) < 0 ||
+      Number(costoMantenimiento) < 0
     ) {
-      cambiarMensajeError("La cantidad debe ser un entero mayor a cero.");
+      cambiarMensajeError(
+        "Ingresa un valor de venta y mantenimiento no negativos.",
+      );
       return;
     }
 
-    cambiarListaEquipos((objetos) => [
-      ...objetos,
+    cambiarListaEquipos((equipos) => [
+      ...equipos,
       {
-        nombre: nombre.trim(),
-        peso: Number(peso),
-        valor: Number(valor),
-        ...(variante === "acotada" ? { cantidad: Number(cantidad) } : {}),
+        valorVenta: Number(valorVenta),
+        costoMantenimiento: Number(costoMantenimiento),
       },
     ]);
-    cambiarIndicesSeleccionados((indices) => [...indices, listaEquipos.length]);
-    cambiarNombre("");
-    cambiarPeso("");
-    cambiarValor("");
-    cambiarCantidad("");
+    cambiarValorVenta("");
+    cambiarCostoMantenimiento("");
   }
 
-  /** Quita un objeto y reajusta los índices de selección. */
   function eliminarEquipo(indice: number) {
     limpiarResultados();
-    cambiarListaEquipos((objetos) => objetos.filter((_, i) => i !== indice));
-    cambiarIndicesSeleccionados((indices) =>
-      indices.filter((i) => i !== indice).map((i) => (i > indice ? i - 1 : i)),
-    );
+    cambiarListaEquipos((equipos) => equipos.filter((_, i) => i !== indice));
   }
 
-  /** Permite editar la cantidad disponible cuando se cambia a variante acotada. */
-  function actualizarCantidadObjeto(indice: number, texto: string) {
-    limpiarResultados();
-    cambiarListaEquipos((objetos) =>
-      objetos.map((objeto, i) =>
-        i === indice
-          ? { ...objeto, cantidad: texto === "" ? undefined : Number(texto) }
-          : objeto,
-      ),
-    );
-  }
-
-  /** Marca o desmarca un objeto para incluirlo en el cálculo. */
-  function cambiarSeleccion(indice: number) {
-    limpiarResultados();
-    cambiarIndicesSeleccionados((actual) =>
-      actual.includes(indice)
-        ? actual.filter((i) => i !== indice)
-        : [...actual, indice],
-    );
-  }
-
-  /** Selecciona todos los objetos de una vez. */
-  function seleccionarTodos() {
-    limpiarResultados();
-    cambiarIndicesSeleccionados(listaEquipos.map((_, i) => i));
-  }
-
-  /** Envía el JSON a FastAPI y guarda la respuesta completa para visualizarla. */
-  async function calcularMochila() {
+  async function calcularReemplazo() {
     if (calculando) return;
     limpiarResultados();
     try {
       const configuracion = obtenerConfiguracionActual();
       cambiarCalculando(true);
-      const respuesta = await fetch(API_MOCHILA, {
+      const respuesta = await fetch(API_REEMPLAZO, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(configuracion),
       });
-      if (!respuesta.ok)
-        throw new Error(`Error HTTP ${respuesta.status} del servidor.`);
-      cambiarResultadoBackend(validarRespuesta(await respuesta.json()));
-      cambiarMensajeExito("Cálculo completado.");
+
+      if (!respuesta.ok) {
+        throw new Error(
+          "El servidor devolvió el error HTTP " + respuesta.status + ".",
+        );
+      }
+      const datos: unknown = await respuesta.json();
+      cambiarResultadoBackend(validarRespuesta(datos));
+      cambiarMensajeExito("Cálculo realizado correctamente.");
     } catch (error) {
       cambiarMensajeError(
-        error instanceof Error ? error.message : "No se pudo calcular.",
+        error instanceof Error
+          ? error.message
+          : "No se pudo calcular el reemplazo.",
       );
     } finally {
       cambiarCalculando(false);
     }
   }
 
-  const objetosVisibles = listaEquipos
-    .map((objeto, indice) => ({ objeto, indice }))
-    .filter(
-      ({ indice }) =>
-        !soloSeleccionados || indicesSeleccionados.includes(indice),
-    );
-  const camposDeRespuesta = resultadoBackend
-    ? Object.entries(resultadoBackend).filter(
-        ([clave]) =>
-          clave !== "pasos" && (mostrarTodoResultado || clave === "resultado"),
-      )
-    : [];
-
   return (
-    <div className="mochila">
-      <h1>Problema de la Mochila</h1>
+    <div
+      className="reemplazo-pagina"
+      style={{ maxHeight: "calc(100dvh - 90px)", overflowY: "auto" }}
+    >
+      {!resultadoBackend && (
+        <>
+          <p className="reemplazo-etiqueta">Investigación de Operaciones</p>
+          <h1>Reemplazo de Equipos</h1>
+          <p className="reemplazo-introduccion">
+            Ingresa los costos de cada año de vida útil y calcula los planes
+            óptimos de reemplazo mediante el backend.
+          </p>
 
-      <form onSubmit={agregarEquipo}>
-        <h2>Datos generales</h2>
-
-        <label>
-          Cargar archivo JSON:
-          <input
-            type="file"
-            accept=".json,application/json"
-            onChange={cargarArchivoJson}
-          />
-        </label>
-
-        <button type="button" onClick={guardarConfiguracionJson}>
-          Guardar archivo JSON
-        </button>
-
-        <div className="formulario-mochila">
-          <label>
-            Variante:
-            <select
-              value={variante}
-              onChange={(evento) => {
-                cambiarVariante(evento.target.value as Variante);
-                limpiarResultados();
-              }}
-            >
-              <option value="0/1">0/1</option>
-              <option value="acotada">Acotada</option>
-              <option value="no acotada">No acotada</option>
-            </select>
-          </label>
-
-          <label>
-            Capacidad:
-            <input
-              type="number"
-              min="0"
-              step="any"
-              value={capacidad}
-              onChange={(evento) => {
-                cambiarCapacidad(evento.target.value);
-                limpiarResultados();
-              }}
-              required
-            />
-          </label>
-        </div>
-
-        <h2>Agregar objeto</h2>
-        <div className="formulario-mochila">
-          <label>
-            Nombre:
-            <input
-              value={nombre}
-              onChange={(evento) => cambiarNombre(evento.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            Peso:
-            <input
-              type="number"
-              min="0"
-              step="any"
-              value={peso}
-              onChange={(evento) => cambiarPeso(evento.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            Valor:
-            <input
-              type="number"
-              min="0"
-              step="any"
-              value={valor}
-              onChange={(evento) => cambiarValor(evento.target.value)}
-              required
-            />
-          </label>
-
-          {variante === "acotada" && (
-            <label>
-              Cantidad:
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={cantidad}
-                onChange={(evento) => cambiarCantidad(evento.target.value)}
-                required
-              />
-            </label>
-          )}
-
-          <button type="submit">Agregar objeto</button>
-        </div>
-      </form>
-
-      {mensajeError && <p role="alert">{mensajeError}</p>}
-      {mensajeExito && <p role="status">{mensajeExito}</p>}
-
-      <h2>Objetos agregados ({listaEquipos.length})</h2>
-      <div className="acciones-mochila">
-        <button type="button" onClick={seleccionarTodos}>
-          Seleccionar todos
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            cambiarIndicesSeleccionados([]);
-            limpiarResultados();
-          }}
-        >
-          Deseleccionar todos
-        </button>
-        <button
-          type="button"
-          onClick={() => cambiarSoloSeleccionados(!soloSeleccionados)}
-        >
-          {soloSeleccionados ? "Mostrar todos" : "Mostrar solo seleccionados"}
-        </button>
-      </div>
-
-      <table className="tabla-mochila">
-        <thead>
-          <tr>
-            <th>Seleccionar</th>
-            <th>Nombre</th>
-            <th>Peso</th>
-            <th>Valor</th>
-            {variante === "acotada" && <th>Cantidad</th>}
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          {objetosVisibles.map(({ objeto, indice }) => (
-            <tr key={indice}>
-              <td>
+          <section className="reemplazo-panel">
+            <div className="reemplazo-titulo-seccion">
+              <div>
+                <h2>1. Datos generales</h2>
+                <p>Puedes cargar un JSON o ingresar los datos manualmente.</p>
+              </div>
+              <div className="reemplazo-archivo">
+                <label>
+                  Cargar archivo JSON
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={cargarArchivoJson}
+                  />
+                </label>
+                <button type="button" onClick={guardarConfiguracionJson}>
+                  Guardar JSON
+                </button>
+              </div>
+            </div>
+            <div className="formulario-equipos">
+              <label>
+                Costo inicial
                 <input
-                  type="checkbox"
-                  checked={indicesSeleccionados.includes(indice)}
-                  onChange={() => cambiarSeleccion(indice)}
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={costoInicial}
+                  onChange={(evento) => {
+                    cambiarCostoInicial(evento.target.value);
+                    limpiarResultados();
+                  }}
+                  placeholder="Ej. 500"
                 />
-              </td>
-              <td>{objeto.nombre}</td>
-              <td>{objeto.peso}</td>
-              <td>{objeto.valor}</td>
-              {variante === "acotada" && (
-                <td>
+              </label>
+              <label>
+                Plazo (años)
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={plazo}
+                  onChange={(evento) => {
+                    cambiarPlazo(evento.target.value);
+                    limpiarResultados();
+                  }}
+                  placeholder="Ej. 5"
+                />
+              </label>
+              <label>
+                Vida útil (años)
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={vidaUtil}
+                  onChange={(evento) => {
+                    cambiarVidaUtil(evento.target.value);
+                    cambiarListaEquipos([]);
+                    limpiarResultados();
+                  }}
+                  placeholder="Ej. 3"
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="reemplazo-panel">
+            <h2>2. Agregar período</h2>
+            <p className="reemplazo-ayuda">
+              Agrega un período a la vez, hasta completar los {vidaUtil || "?"}{" "}
+              años de vida útil.
+            </p>
+            <form onSubmit={agregarEquipo}>
+              <div className="formulario-equipos">
+                <label>
+                  Valor de reventa
                   <input
                     type="number"
-                    min="1"
-                    step="1"
-                    value={objeto.cantidad ?? ""}
+                    min="0"
+                    step="any"
+                    value={valorVenta}
                     onChange={(evento) =>
-                      actualizarCantidadObjeto(indice, evento.target.value)
+                      cambiarValorVenta(evento.target.value)
                     }
+                    placeholder="Ej. 400"
+                    required
                   />
-                </td>
-              )}
-              <td>
-                <button type="button" onClick={() => eliminarEquipo(indice)}>
-                  Eliminar
+                </label>
+                <label>
+                  Costo de mantenimiento
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={costoMantenimiento}
+                    onChange={(evento) =>
+                      cambiarCostoMantenimiento(evento.target.value)
+                    }
+                    placeholder="Ej. 30"
+                    required
+                  />
+                </label>
+              </div>
+              <div className="reemplazo-acciones">
+                <button type="submit" className="reemplazo-primario">
+                  Agregar período
                 </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </div>
+            </form>
+          </section>
 
-      <button type="button" onClick={calcularMochila} disabled={calculando}>
-        {calculando ? "Calculando..." : "Calcular"}
-      </button>
+          <section className="reemplazo-panel">
+            <h2>
+              3. Períodos agregados ({listaEquipos.length}/{vidaUtil || "?"})
+            </h2>
+            <div className="reemplazo-desborde">
+              <table className="tabla-equipos">
+                <thead>
+                  <tr>
+                    <th>Año de uso</th>
+                    <th>Valor de reventa</th>
+                    <th>Mantenimiento</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {listaEquipos.length === 0 ? (
+                    <tr>
+                      <td colSpan={4}>Todavía no se han agregado períodos.</td>
+                    </tr>
+                  ) : (
+                    listaEquipos.map((equipo, indice) => (
+                      <tr key={indice}>
+                        <td>{indice + 1}</td>
+                        <td>{formatearNumero(equipo.valorVenta)}</td>
+                        <td>{formatearNumero(equipo.costoMantenimiento)}</td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => eliminarEquipo(indice)}
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="reemplazo-acciones">
+              <button
+                type="button"
+                className="reemplazo-primario"
+                onClick={calcularReemplazo}
+                disabled={calculando}
+              >
+                {calculando ? "Calculando..." : "Calcular reemplazo"}
+              </button>
+            </div>
+          </section>
+
+          {mensajeError && (
+            <p className="reemplazo-mensaje reemplazo-error" role="alert">
+              {mensajeError}
+            </p>
+          )}
+          {mensajeExito && (
+            <p className="reemplazo-mensaje reemplazo-exito" role="status">
+              {mensajeExito}
+            </p>
+          )}
+        </>
+      )}
 
       {resultadoBackend && (
-        <section className="resultados-mochila">
-          <h2>Resultado del algoritmo</h2>
-
-          <button
-            type="button"
-            onClick={() => cambiarMostrarTodoResultado(true)}
+        <section
+          className="reemplazo-panel resultados-reemplazo"
+          aria-label="Resultado del reemplazo de equipos"
+        >
+          <div
+            className="reemplazo-acciones"
+            style={{
+              justifyContent: "flex-start",
+              position: "sticky",
+              top: 0,
+              zIndex: 2,
+              marginTop: 0,
+              paddingBottom: 12,
+              background: "#fff",
+            }}
           >
-            Mostrar todo
-          </button>
-          <button
-            type="button"
-            onClick={() => cambiarMostrarTodoResultado(false)}
-          >
-            Solo resultado
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                cambiarResultadoBackend(null);
+                cambiarMensajeExito("");
+              }}
+            >
+              ← Volver
+            </button>
+          </div>
+          <h2>4. Resultado del algoritmo</h2>
+          <div className="reemplazo-resumen">
+            <div className="reemplazo-indicador">
+              <span>Costo mínimo total</span>
+              <strong>
+                {formatearNumero(resultadoBackend.resultado.costoMinimo)}
+              </strong>
+            </div>
+            <div className="reemplazo-indicador">
+              <span>Cantidad de planes óptimos</span>
+              <strong>
+                {formatearNumero(
+                  resultadoBackend.resultado.cantidadPlanesOptimos,
+                )}
+              </strong>
+            </div>
+          </div>
 
-          {camposDeRespuesta.map(([campo, dato]) => (
-            <CampoResultado key={campo} nombre={campo} dato={dato} />
-          ))}
+          <div className="reemplazo-conclusion">
+            <h3>Conclusión</h3>
+            <p>{resultadoBackend.resultado.conclusion}</p>
+          </div>
+
+          <div className="reemplazo-bloque">
+            <h3>Planes óptimos de reemplazo</h3>
+            <p>
+              Cada número representa un año; los puntos intermedios indican
+              cuándo conviene reemplazar el equipo.
+            </p>
+            {resultadoBackend.resultado.planesOptimos.length === 0 ? (
+              <p>El backend no devolvió planes en esta página.</p>
+            ) : (
+              <ol className="reemplazo-planes">
+                {resultadoBackend.resultado.planesOptimos.map(
+                  (plan, indice) => (
+                    <li key={indice}>
+                      <strong>{"Plan " + (indice + 1) + ": "}</strong>
+                      {formatearRuta(plan)}
+                    </li>
+                  ),
+                )}
+              </ol>
+            )}
+            {resultadoBackend.resultado.paginacion && (
+              <p>
+                Mostrando {resultadoBackend.resultado.paginacion.devueltos}{" "}
+                planes desde el índice{" "}
+                {resultadoBackend.resultado.paginacion.offset}.
+                {resultadoBackend.resultado.paginacion.hayMas &&
+                  " Hay más planes disponibles en el backend."}
+              </p>
+            )}
+          </div>
+
+          <div className="reemplazo-bloque">
+            <h3>Costos por duración</h3>
+            <div className="reemplazo-desborde">
+              <table className="tabla-equipos">
+                <thead>
+                  <tr>
+                    <th>Años de uso</th>
+                    <th>Costo neto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resultadoBackend.tablas.costosPorDuracion.map(
+                    (costo, indice) => (
+                      <tr key={indice}>
+                        <td>
+                          {indice +
+                            (resultadoBackend.metadatos?.costosIndexadosDesde ??
+                              1)}
+                        </td>
+                        <td>{formatearNumero(costo)}</td>
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="reemplazo-bloque">
+            <h3>Tabla de programación dinámica</h3>
+            <p>
+              G(t) es el costo mínimo desde el instante t. Los siguientes
+              instantes muestran las decisiones óptimas posibles.
+            </p>
+            <div className="reemplazo-desborde">
+              <table className="tabla-equipos">
+                <thead>
+                  <tr>
+                    <th>Instante (t)</th>
+                    <th>G(t)</th>
+                    <th>Siguientes instantes óptimos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resultadoBackend.tablas.G.map((costo, indice) => (
+                    <tr key={indice}>
+                      <td>
+                        {indice +
+                          (resultadoBackend.metadatos?.instanteInicial ?? 0)}
+                      </td>
+                      <td>{formatearNumero(costo)}</td>
+                      <td>
+                        {resultadoBackend.tablas.siguientes[indice]?.join(
+                          ", ",
+                        ) || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {resultadoBackend.metadatos && (
+            <p className="reemplazo-ayuda">
+              Horizonte: {resultadoBackend.metadatos.instanteInicial ?? 0}
+              {" → "}
+              {resultadoBackend.metadatos.instanteFinal ?? Number(plazo)}
+              {" años."}
+            </p>
+          )}
         </section>
       )}
     </div>

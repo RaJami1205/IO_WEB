@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "../estilos/Mochila.css";
 import type { ChangeEvent, FormEvent } from "react";
 
 type Variante = "acotada" | "0-1" | "no-acotada";
@@ -35,8 +36,8 @@ function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
 
-/** Verifica que los datos de entrada cumplan el formato del problema Mochila. */
-function validarConfiguracion(datos: unknown): ConfiguracionMochila {
+// eslint-disable-next-line react-refresh/only-export-components
+export function validarConfiguracion(datos: unknown): ConfiguracionMochila {
   if (!esObjeto(datos)) throw new Error("El JSON debe ser un objeto.");
   if (
     Object.keys(datos).some(
@@ -360,326 +361,412 @@ export default function Mochila() {
       cambiarCalculando(false);
     }
   }
-
   return (
-    <div className="mochila-pagina">
-      <p className="mochila-badge">Investigación de Operaciones</p>
-      <h1>Problema de la Mochila</h1>
-      <p>
-        Mochila 0-1, acotada y no-acotada. El cálculo se realiza en FastAPI.
-      </p>
+    <div
+      className="mochila-pagina"
+      style={{ maxHeight: "calc(100dvh - 90px)", overflowY: "auto" }}
+    >
+      {!resultadoBackend && (
+        <>
+          <p className="mochila-badge">Investigación de Operaciones</p>
 
-      <section className="mochila-panel">
-        <h2>1. Datos de entrada</h2>
-        <div className="mochila-grid">
-          <label>
-            Variante
-            <select
-              value={variante}
-              onChange={(e) => {
-                cambiarVariante(e.target.value as Variante);
-                limpiarResultados();
-              }}
-            >
-              <option value="0-1">0-1</option>
-              <option value="acotada">Acotada</option>
-              <option value="no-acotada">No acotada</option>
-            </select>
-          </label>
-          <label>
-            Capacidad de la mochila
-            <input
-              type="number"
-              min="1"
-              max="20"
-              step="1"
-              value={capacidad}
-              onChange={(e) => {
-                cambiarCapacidad(e.target.value);
-                limpiarResultados();
-              }}
-              placeholder="Ej. 10"
-            />
-          </label>
-          <label>
-            Cargar configuración JSON
-            <input
-              type="file"
-              accept=".json,application/json"
-              onChange={cargarArchivoJson}
-            />
-          </label>
-        </div>
-        <div className="mochila-acciones">
-          <button type="button" onClick={guardarConfiguracionJson}>
-            Guardar JSON
-          </button>
-        </div>
-      </section>
+          <h1>Problema de la Mochila</h1>
 
-      <section className="mochila-panel">
-        <h2>2. Agregar objeto</h2>
-        <form onSubmit={agregarEquipo}>
-          <div className="mochila-grid">
-            <label>
-              Nombre
-              <input
-                value={nombre}
-                onChange={(e) => cambiarNombre(e.target.value)}
-                placeholder="Objeto A"
-                required
-              />
-            </label>
-            <label>
-              Peso
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={peso}
-                onChange={(e) => cambiarPeso(e.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Valor / beneficio
-              <input
-                type="number"
-                min="0.000001"
-                max="1000000000000"
-                step="0.000001"
-                value={valor}
-                onChange={(e) => cambiarValor(e.target.value)}
-                required
-              />
-            </label>
-            {variante === "acotada" && (
+          <p>
+            Mochila 0-1, acotada y no-acotada. El cálculo se realiza en FastAPI.
+          </p>
+
+          {/* ============================= */}
+          {/* 1. DATOS DE ENTRADA           */}
+          {/* ============================= */}
+
+          <section className="mochila-panel">
+            <h2>1. Datos de entrada</h2>
+
+            <div className="mochila-grid">
               <label>
-                Cantidad disponible
+                Variante
+                <select
+                  value={variante}
+                  onChange={(evento) => {
+                    cambiarVariante(evento.target.value as Variante);
+                    limpiarResultados();
+                  }}
+                >
+                  <option value="0-1">0-1</option>
+                  <option value="acotada">Acotada</option>
+                  <option value="no-acotada">No acotada</option>
+                </select>
+              </label>
+
+              <label>
+                Capacidad de la mochila
                 <input
                   type="number"
                   min="1"
+                  max="20"
                   step="1"
-                  value={cantidad}
-                  onChange={(e) => cambiarCantidad(e.target.value)}
-                  required
+                  value={capacidad}
+                  onChange={(evento) => {
+                    cambiarCapacidad(evento.target.value);
+                    limpiarResultados();
+                  }}
+                  placeholder="Ej. 10"
                 />
               </label>
-            )}
-          </div>
-          <div className="mochila-acciones">
-            <button className="mochila-primario" type="submit">
-              Agregar objeto
-            </button>
-          </div>
-        </form>
-      </section>
 
-      <section className="mochila-panel">
-        <h2>3. Objetos ({listaEquipos.length})</h2>
-        <div className="mochila-desborde">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Peso</th>
-                <th>Valor</th>
-                {variante === "acotada" && <th>Cantidad</th>}
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {listaEquipos.map((objeto, indice) => (
-                <tr key={indice}>
-                  <td>{objeto.nombre}</td>
-                  <td>{objeto.peso}</td>
-                  <td>{objeto.valor}</td>
-                  {variante === "acotada" && (
-                    <td>
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        className="mochila-cantidad-input"
-                        aria-label={`Cantidad disponible de ${objeto.nombre}`}
-                        value={objeto.cantidad ?? ""}
-                        onChange={(e) =>
-                          actualizarCantidadObjeto(indice, e.target.value)
-                        }
-                      />
-                    </td>
-                  )}
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => eliminarEquipo(indice)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="mochila-acciones">
-          <button
-            className="mochila-primario"
-            type="button"
-            disabled={calculando}
-            onClick={calcularMochila}
-          >
-            {calculando ? "Calculando..." : "Calcular mochila"}
-          </button>
-        </div>
-      </section>
-
-      {mensajeError && (
-        <p className="mochila-alerta mochila-error" role="alert">
-          {mensajeError}
-        </p>
-      )}
-      {mensajeExito && (
-        <p className="mochila-alerta mochila-exito" role="status">
-          {mensajeExito}
-        </p>
-      )}
-
-      <section className="mochila-panel">
-        <h2>4. Resultado del algoritmo</h2>
-        {resultadoBackend ? (
-          <>
-            <div className="mochila-acciones">
-              <button
-                type="button"
-                onClick={() => cambiarMostrarTodoResultado(true)}
-              >
-                Mostrar todo
-              </button>
-              <button
-                type="button"
-                onClick={() => cambiarMostrarTodoResultado(false)}
-              >
-                Solo resultado
-              </button>
+              <label>
+                Cargar configuración JSON
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={cargarArchivoJson}
+                />
+              </label>
             </div>
 
-            {/* Resumen: los nombres se toman directamente del resultado JSON. */}
-            <div className="mochila-bloque">
-              <h3>Solución óptima</h3>
-              <div className="mochila-subcampos">
-                {Object.entries(resultadoBackend.resultado).map(
-                  ([clave, dato]) => (
-                    <div className="mochila-dato" key={clave}>
-                      <h4>{clave}</h4>
-                      {Array.isArray(dato) && dato.every(esObjeto) ? (
-                        <div className="mochila-desborde">
-                          <table>
-                            <thead>
-                              <tr>
-                                <th>#</th>
-                                {Array.from(
-                                  new Set(
-                                    dato.flatMap((objeto) =>
-                                      Object.keys(objeto),
-                                    ),
-                                  ),
-                                ).map((campo) => (
-                                  <th key={campo}>{campo}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {dato.map((objeto, indice) => (
-                                <tr key={indice}>
-                                  <th>{indice + 1}</th>
-                                  {Array.from(
-                                    new Set(
-                                      dato.flatMap((registro) =>
-                                        Object.keys(registro),
-                                      ),
-                                    ),
-                                  ).map((campo) => (
-                                    <td key={campo}>
-                                      {textoCelda(objeto[campo])}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          {dato.length === 0 && (
-                            <p>Sin objetos seleccionados.</p>
-                          )}
-                        </div>
-                      ) : (
-                        <p>
-                          {clave === "hayEmpates" && typeof dato === "boolean"
-                            ? dato
-                              ? "Sí"
-                              : "No"
-                            : textoCelda(dato)}
-                        </p>
-                      )}
-                    </div>
-                  ),
+            <div className="mochila-acciones">
+              <button type="button" onClick={guardarConfiguracionJson}>
+                Guardar JSON
+              </button>
+            </div>
+          </section>
+
+          {/* ============================= */}
+          {/* 2. AGREGAR OBJETO            */}
+          {/* ============================= */}
+
+          <section className="mochila-panel">
+            <h2>2. Agregar objeto</h2>
+
+            <form onSubmit={agregarEquipo}>
+              <div className="mochila-grid">
+                <label>
+                  Nombre
+                  <input
+                    value={nombre}
+                    onChange={(evento) => cambiarNombre(evento.target.value)}
+                    placeholder="Objeto A"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Peso
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={peso}
+                    onChange={(evento) => cambiarPeso(evento.target.value)}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Valor / beneficio
+                  <input
+                    type="number"
+                    min="0.000001"
+                    max="1000000000000"
+                    step="0.000001"
+                    value={valor}
+                    onChange={(evento) => cambiarValor(evento.target.value)}
+                    required
+                  />
+                </label>
+
+                {variante === "acotada" && (
+                  <label>
+                    Cantidad disponible
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={cantidad}
+                      onChange={(evento) =>
+                        cambiarCantidad(evento.target.value)
+                      }
+                      required
+                    />
+                  </label>
                 )}
               </div>
+
+              <div className="mochila-acciones">
+                <button className="mochila-primario" type="submit">
+                  Agregar objeto
+                </button>
+              </div>
+            </form>
+          </section>
+
+          {/* ============================= */}
+          {/* 3. OBJETOS AGREGADOS         */}
+          {/* ============================= */}
+
+          <section className="mochila-panel">
+            <h2>3. Objetos agregados ({listaEquipos.length})</h2>
+
+            <div className="mochila-desborde">
+              <table className="mochila-tabla-objetos">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Peso</th>
+                    <th>Valor</th>
+
+                    {variante === "acotada" && <th>Cantidad</th>}
+
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {listaEquipos.map((objeto, indice) => (
+                    <tr key={indice}>
+                      <td>{objeto.nombre}</td>
+                      <td>{objeto.peso}</td>
+                      <td>{objeto.valor}</td>
+
+                      {variante === "acotada" && (
+                        <td>
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            className="mochila-cantidad-input"
+                            aria-label={`Cantidad disponible de ${objeto.nombre}`}
+                            value={objeto.cantidad ?? ""}
+                            onChange={(evento) =>
+                              actualizarCantidadObjeto(
+                                indice,
+                                evento.target.value,
+                              )
+                            }
+                          />
+                        </td>
+                      )}
+
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => eliminarEquipo(indice)}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            {/* Las cuatro matrices se leen de tablas: V, decision, opciones, marca. */}
-            {mostrarTodoResultado && (
-              <>
-                <h3>Tablas de programación dinámica</h3>
-                <p>
-                  Filas: capacidad de 0 a {capacidad}. Columnas: objeto 0
-                  (ninguno) y objetos del 1 al {listaEquipos.length}.
-                </p>
-                <p>
-                  Verde: se utiliza el objeto de la columna. Rojo: se conserva
-                  el resultado de la columna anterior. En empates se elige el
-                  menor k.
-                </p>
+            <div className="mochila-acciones">
+              <button
+                className="mochila-primario"
+                type="button"
+                disabled={calculando}
+                onClick={calcularMochila}
+              >
+                {calculando ? "Calculando..." : "Calcular mochila"}
+              </button>
+            </div>
+          </section>
 
-                {(["V", "decision", "opciones", "marca"] as const).map(
-                  (nombreTabla) => (
-                    <div className="mochila-bloque" key={nombreTabla}>
-                      <h4>
-                        {nombreTabla === "V" &&
-                          "V — Valor óptimo por capacidad"}
-                        {nombreTabla === "decision" &&
-                          "decision — Copias elegidas (k)"}
-                        {nombreTabla === "opciones" &&
-                          "opciones — Copias empatadas"}
-                        {nombreTabla === "marca" &&
-                          "marca — Uso de cada objeto"}
-                      </h4>
+          {/* ============================= */}
+          {/* MENSAJES DEL SISTEMA         */}
+          {/* ============================= */}
+
+          {mensajeError && (
+            <p className="mochila-alerta mochila-error" role="alert">
+              {mensajeError}
+            </p>
+          )}
+
+          {mensajeExito && (
+            <p className="mochila-alerta mochila-exito" role="status">
+              {mensajeExito}
+            </p>
+          )}
+        </>
+      )}
+
+      {/* ============================= */}
+      {/* 4. RESULTADO DEL ALGORITMO   */}
+      {/* ============================= */}
+
+      {resultadoBackend && (
+        <>
+          <div
+            className="mochila-acciones"
+            style={{
+              justifyContent: "flex-start",
+              position: "sticky",
+              top: 0,
+              zIndex: 2,
+              background: "#f8fafc",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                cambiarResultadoBackend(null);
+                cambiarMensajeExito("");
+              }}
+            >
+              ← Volver
+            </button>
+          </div>
+          <section className="mochila-panel">
+            <h2>4. Resultado del algoritmo</h2>
+
+            {resultadoBackend ? (
+              <>
+                {/* RESUMEN DE LA SOLUCIÓN */}
+
+                <div className="mochila-resumen">
+                  <h3>Solución óptima</h3>
+
+                  <div className="mochila-resumen-datos">
+                    <div className="mochila-dato">
+                      <span>Valor óptimo</span>
+
+                      <strong>
+                        {textoCelda(resultadoBackend.resultado.valorOptimo)}
+                      </strong>
+                    </div>
+
+                    <div className="mochila-dato">
+                      <span>Peso utilizado</span>
+
+                      <strong>
+                        {textoCelda(resultadoBackend.resultado.pesoUsado)}
+                        {" / "}
+                        {capacidad}
+                      </strong>
+                    </div>
+
+                    <div className="mochila-dato">
+                      <span>Variante</span>
+
+                      <strong>{variante}</strong>
+                    </div>
+
+                    <div className="mochila-dato">
+                      <span>¿Hay empates?</span>
+
+                      <strong>
+                        {resultadoBackend.resultado.hayEmpates === true
+                          ? "Sí"
+                          : "No"}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* OBJETOS DE LA SOLUCIÓN */}
+
+                  <div className="mochila-seleccion">
+                    <h4>Objetos seleccionados</h4>
+
+                    {Array.isArray(resultadoBackend.resultado.seleccion) &&
+                    resultadoBackend.resultado.seleccion.length > 0 ? (
+                      <ul>
+                        {resultadoBackend.resultado.seleccion.map(
+                          (objeto, indice) => (
+                            <li key={indice}>
+                              {esObjeto(objeto) ? (
+                                <>
+                                  <strong>{textoCelda(objeto.nombre)}</strong>
+
+                                  <span>
+                                    {" — Cantidad: "}
+                                    {textoCelda(objeto.cantidad)}
+                                  </span>
+
+                                  <span>
+                                    {" | Peso: "}
+                                    {textoCelda(objeto.pesoTotal)}
+                                  </span>
+
+                                  <span>
+                                    {" | Valor: "}
+                                    {textoCelda(objeto.valorTotal)}
+                                  </span>
+                                </>
+                              ) : (
+                                textoCelda(objeto)
+                              )}
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    ) : (
+                      <p>No se seleccionaron objetos.</p>
+                    )}
+                  </div>
+
+                  {/* CONCLUSIÓN DEL BACKEND */}
+
+                  <div className="mochila-conclusion">
+                    <h4>Conclusión</h4>
+
+                    <p>{textoCelda(resultadoBackend.resultado.conclusion)}</p>
+                  </div>
+                </div>
+
+                {/* ============================= */}
+                {/* ÚNICA TABLA DE RESULTADOS     */}
+                {/* ============================= */}
+
+                <div className="mochila-bloque">
+                  <div className="mochila-tabla-encabezado">
+                    <h3>Tabla de programación dinámica</h3>
+                  </div>
+
+                  {mostrarTodoResultado && (
+                    <>
+                      {/* LEYENDA DE LOS COLORES */}
+
+                      <p className="mochila-leyenda">
+                        <span className="celda-verde">
+                          Verde: utiliza el objeto
+                        </span>
+
+                        {" | "}
+
+                        <span className="celda-roja">
+                          Rojo: no utiliza el objeto
+                        </span>
+                      </p>
+
+                      {/* TABLA V CON MARCAS */}
+
                       <div className="mochila-desborde">
                         <table className="mochila-tabla-resultados">
                           <thead>
                             <tr>
-                              <th>Capacidad</th>
-                              {Array.from(
-                                {
-                                  length:
-                                    resultadoBackend.tablas[nombreTabla][0]
-                                      ?.length ?? 0,
-                                },
+                              <th>Cap.</th>
+
+                              {resultadoBackend.tablas.V[0]?.map(
                                 (_, indice) => (
                                   <th key={indice}>
                                     {indice === 0
-                                      ? "0 — Sin objetos"
-                                      : `${indice} — ${listaEquipos[indice - 1]?.nombre ?? "Objeto"}`}
+                                      ? "Sin objetos"
+                                      : (listaEquipos[indice - 1]?.nombre ??
+                                        `Objeto ${indice}`)}
                                   </th>
                                 ),
                               )}
                             </tr>
                           </thead>
+
                           <tbody>
-                            {resultadoBackend.tablas[nombreTabla].map(
+                            {resultadoBackend.tablas.V.map(
                               (fila, capacidadFila) => (
                                 <tr key={capacidadFila}>
                                   <th>{capacidadFila}</th>
+
                                   {fila.map((dato, indice) => (
                                     <td
                                       key={indice}
@@ -694,12 +781,25 @@ export default function Mochila() {
                                             ? "celda-roja"
                                             : ""
                                       }
+                                      title={`
+Valor: ${textoCelda(dato)}
+
+Copias elegidas: ${textoCelda(
+                                        resultadoBackend.tablas.decision[
+                                          capacidadFila
+                                        ]?.[indice],
+                                      )}
+
+Opciones: ${textoCelda(
+                                        resultadoBackend.tablas.opciones[
+                                          capacidadFila
+                                        ]?.[indice],
+                                      )}
+
+Marca: ${textoCelda(resultadoBackend.tablas.marca[capacidadFila]?.[indice])}
+`}
                                     >
-                                      {Array.isArray(dato)
-                                        ? dato.length > 0
-                                          ? dato.join(", ")
-                                          : "—"
-                                        : textoCelda(dato)}
+                                      {textoCelda(dato)}
                                     </td>
                                   ))}
                                 </tr>
@@ -708,31 +808,19 @@ export default function Mochila() {
                           </tbody>
                         </table>
                       </div>
-                    </div>
-                  ),
-                )}
-
-                <div className="mochila-bloque">
-                  <h3>Metadatos de los ejes</h3>
-                  {Object.entries(resultadoBackend.metadatos).length > 0 ? (
-                    Object.entries(resultadoBackend.metadatos).map(
-                      ([clave, dato]) => (
-                        <p key={clave}>
-                          <strong>{clave}:</strong> {textoCelda(dato)}
-                        </p>
-                      ),
-                    )
-                  ) : (
-                    <p>El servidor no incluyó metadatos adicionales.</p>
+                    </>
                   )}
                 </div>
               </>
+            ) : (
+              <p>
+                Al presionar Calcular, aquí aparecerán la solución óptima y la
+                tabla de programación dinámica.
+              </p>
             )}
-          </>
-        ) : (
-          <p></p>
-        )}
-      </section>
+          </section>
+        </>
+      )}
     </div>
   );
 }

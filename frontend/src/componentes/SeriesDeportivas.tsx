@@ -20,8 +20,8 @@ const configuracionInicial: ConfiguracionSerie = {
   formato: [true, true, false, false, false, true, true],
 };
 
-// Comprueba que una configuración cumple los requisitos.
-function validarConfiguracion(datosRecibidos: unknown): ConfiguracionSerie {
+// eslint-disable-next-line react-refresh/only-export-components
+export function validarConfiguracion(datosRecibidos: unknown): ConfiguracionSerie {
   if (
     typeof datosRecibidos !== "object" ||
     datosRecibidos === null ||
@@ -292,209 +292,244 @@ function SeriesDeportivas() {
   }
 
   return (
-    <section className="pagina-series-deportivas">
+    <section
+      className="pagina-series-deportivas"
+      style={{ maxHeight: "calc(100dvh - 90px)", overflowY: "auto" }}
+    >
       <div className="contenedor-series-deportivas">
-        <header className="encabezado-series">
-          <span className="etiqueta-proyecto">
-            ALGORITMO 02 · INVESTIGACIÓN DE OPERACIONES
-          </span>
-
-          <h1>Series Deportivas</h1>
-
-          <p>
-            Configura las probabilidades y el orden de los partidos para
-            calcular la probabilidad de que el equipo A gane la serie.
-          </p>
-        </header>
-
-        <form className="formulario-series" onSubmit={calcularSerie} noValidate>
-          {/* OPCIONES PARA CARGAR O GUARDAR JSON */}
-          <div className="seccion-configuracion">
-            <div>
-              <h2>Configuración de la serie</h2>
-              <p>
-                Ingresa los datos manualmente o carga un archivo JSON para
-                editarlos.
-              </p>
-            </div>
-
-            <div className="acciones-archivo">
-              <label
-                htmlFor="archivo-configuracion"
-                className="etiqueta-archivo"
-              >
-                Cargar JSON
-              </label>
-
-              <input
-                id="archivo-configuracion"
-                type="file"
-                accept=".json,application/json"
-                onChange={cargarArchivoJson}
-              />
-
-              <button
-                type="button"
-                className="boton-secundario"
-                onClick={guardarConfiguracionJson}
-              >
-                Guardar JSON
-              </button>
-            </div>
-          </div>
-
-          {/* DATOS GENERALES */}
-          <div className="seccion-formulario">
-            <h2>Datos generales</h2>
-
-            <div className="grupo-campos">
-              <div className="campo-formulario">
-                <label htmlFor="cantidad-juegos">
-                  Cantidad máxima de juegos
-                </label>
-
-                <select
-                  id="cantidad-juegos"
-                  value={cantidadDeJuegos}
-                  onChange={(evento) =>
-                    actualizarCantidadDeJuegos(Number(evento.target.value))
-                  }
-                >
-                  {[1, 3, 5, 7, 9, 11].map((cantidad) => (
-                    <option key={cantidad} value={cantidad}>
-                      {cantidad}
-                    </option>
-                  ))}
-                </select>
-
-                <small>
-                  La serie finaliza cuando un equipo alcanza la mayoría de
-                  victorias.
-                </small>
-              </div>
-
-              <div className="campo-formulario">
-                <label htmlFor="probabilidad-local">
-                  Probabilidad de ganar como local (ph)
-                </label>
-
-                <input
-                  id="probabilidad-local"
-                  type="number"
-                  min="0"
-                  max="1"
-                  step="any"
-                  value={probabilidadComoLocal}
-                  onChange={(evento) => {
-                    cambiarProbabilidadComoLocal(evento.target.value);
-                    limpiarMensajes();
-                  }}
-                  placeholder="Ejemplo: 0.58"
-                  required
-                />
-
-                <small>
-                  Probabilidad del equipo A cuando juega en casa, entre 0 y 1.
-                </small>
-              </div>
-
-              <div className="campo-formulario">
-                <label htmlFor="probabilidad-visitante">
-                  Probabilidad de ganar como visitante (pr)
-                </label>
-
-                <input
-                  id="probabilidad-visitante"
-                  type="number"
-                  min="0"
-                  max="1"
-                  step="any"
-                  value={probabilidadComoVisitante}
-                  onChange={(evento) => {
-                    cambiarProbabilidadComoVisitante(evento.target.value);
-                    limpiarMensajes();
-                  }}
-                  placeholder="Ejemplo: 0.45"
-                  required
-                />
-
-                <small>
-                  Probabilidad del equipo A cuando juega fuera de casa, entre 0
-                  y 1.
-                </small>
-              </div>
-            </div>
-          </div>
-
-          {/* ORDEN DE LOS PARTIDOS */}
-          <div className="seccion-formulario">
-            <div className="encabezado-localias">
-              <div>
-                <h2>Orden de los partidos</h2>
-                <p>Selecciona dónde jugará el equipo A en cada partido.</p>
-              </div>
-
-              <span className="contador-partidos">
-                {cantidadDeJuegos} juegos
+        {tablaProbabilidades === null && (
+          <>
+            <header className="encabezado-series">
+              <span className="etiqueta-proyecto">
+                ALGORITMO 02 · INVESTIGACIÓN DE OPERACIONES
               </span>
-            </div>
 
-            <div className="lista-partidos">
-              {equipoALocalPorJuego.map((equipoAEsLocal, posicionDelJuego) => (
-                <div className="tarjeta-partido" key={posicionDelJuego}>
-                  <label htmlFor={`localia-juego-${posicionDelJuego}`}>
-                    Juego {posicionDelJuego + 1}
+              <h1>Series Deportivas</h1>
+
+              <p>
+                Configura las probabilidades y el orden de los partidos para
+                calcular la probabilidad de que el equipo A gane la serie.
+              </p>
+            </header>
+
+            <form
+              className="formulario-series"
+              onSubmit={calcularSerie}
+              noValidate
+            >
+              {/* OPCIONES PARA CARGAR O GUARDAR JSON */}
+              <div className="seccion-configuracion">
+                <div>
+                  <h2>Configuración de la serie</h2>
+                  <p>
+                    Ingresa los datos manualmente o carga un archivo JSON para
+                    editarlos.
+                  </p>
+                </div>
+
+                <div className="acciones-archivo">
+                  <label
+                    htmlFor="archivo-configuracion"
+                    className="etiqueta-archivo"
+                  >
+                    Cargar JSON
                   </label>
 
-                  <select
-                    id={`localia-juego-${posicionDelJuego}`}
-                    value={equipoAEsLocal ? "local" : "visitante"}
-                    onChange={(evento) =>
-                      actualizarLocalia(
-                        posicionDelJuego,
-                        evento.target.value === "local",
-                      )
-                    }
+                  <input
+                    id="archivo-configuracion"
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={cargarArchivoJson}
+                  />
+
+                  <button
+                    type="button"
+                    className="boton-secundario"
+                    onClick={guardarConfiguracionJson}
                   >
-                    <option value="local">A es local</option>
-
-                    <option value="visitante">A es visitante</option>
-                  </select>
+                    Guardar JSON
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <p className="explicacion-localias">
-              Local = true · Visitante = false en el archivo JSON.
-            </p>
-          </div>
+              {/* DATOS GENERALES */}
+              <div className="seccion-formulario">
+                <h2>Datos generales</h2>
 
-          {/* VALIDACIONES Y ENVÍO */}
-          {mensajeError && (
-            <p className="mensaje-error" role="alert">
-              {mensajeError}
-            </p>
-          )}
+                <div className="grupo-campos">
+                  <div className="campo-formulario">
+                    <label htmlFor="cantidad-juegos">
+                      Cantidad máxima de juegos
+                    </label>
 
-          {mensajeExito && (
-            <p className="mensaje-exito" role="status">
-              {mensajeExito}
-            </p>
-          )}
+                    <select
+                      id="cantidad-juegos"
+                      value={cantidadDeJuegos}
+                      onChange={(evento) =>
+                        actualizarCantidadDeJuegos(Number(evento.target.value))
+                      }
+                    >
+                      {[1, 3, 5, 7, 9, 11].map((cantidad) => (
+                        <option key={cantidad} value={cantidad}>
+                          {cantidad}
+                        </option>
+                      ))}
+                    </select>
 
-          <div className="acciones-formulario">
-            <button
-              type="submit"
-              className="boton-calcular"
-              disabled={calculando}
-            >
-              {calculando ? "Calculando..." : "Calcular probabilidad"}
-            </button>
-          </div>
-        </form>
+                    <small>
+                      La serie finaliza cuando un equipo alcanza la mayoría de
+                      victorias.
+                    </small>
+                  </div>
+
+                  <div className="campo-formulario">
+                    <label htmlFor="probabilidad-local">
+                      Probabilidad de ganar como local (ph)
+                    </label>
+
+                    <input
+                      id="probabilidad-local"
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="any"
+                      value={probabilidadComoLocal}
+                      onChange={(evento) => {
+                        cambiarProbabilidadComoLocal(evento.target.value);
+                        limpiarMensajes();
+                      }}
+                      placeholder="Ejemplo: 0.58"
+                      required
+                    />
+
+                    <small>
+                      Probabilidad del equipo A cuando juega en casa, entre 0 y
+                      1.
+                    </small>
+                  </div>
+
+                  <div className="campo-formulario">
+                    <label htmlFor="probabilidad-visitante">
+                      Probabilidad de ganar como visitante (pr)
+                    </label>
+
+                    <input
+                      id="probabilidad-visitante"
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="any"
+                      value={probabilidadComoVisitante}
+                      onChange={(evento) => {
+                        cambiarProbabilidadComoVisitante(evento.target.value);
+                        limpiarMensajes();
+                      }}
+                      placeholder="Ejemplo: 0.45"
+                      required
+                    />
+
+                    <small>
+                      Probabilidad del equipo A cuando juega fuera de casa,
+                      entre 0 y 1.
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              {/* ORDEN DE LOS PARTIDOS */}
+              <div className="seccion-formulario">
+                <div className="encabezado-localias">
+                  <div>
+                    <h2>Orden de los partidos</h2>
+                    <p>Selecciona dónde jugará el equipo A en cada partido.</p>
+                  </div>
+
+                  <span className="contador-partidos">
+                    {cantidadDeJuegos} juegos
+                  </span>
+                </div>
+
+                <div className="lista-partidos">
+                  {equipoALocalPorJuego.map(
+                    (equipoAEsLocal, posicionDelJuego) => (
+                      <div className="tarjeta-partido" key={posicionDelJuego}>
+                        <label htmlFor={`localia-juego-${posicionDelJuego}`}>
+                          Juego {posicionDelJuego + 1}
+                        </label>
+
+                        <select
+                          id={`localia-juego-${posicionDelJuego}`}
+                          value={equipoAEsLocal ? "local" : "visitante"}
+                          onChange={(evento) =>
+                            actualizarLocalia(
+                              posicionDelJuego,
+                              evento.target.value === "local",
+                            )
+                          }
+                        >
+                          <option value="local">A es local</option>
+
+                          <option value="visitante">A es visitante</option>
+                        </select>
+                      </div>
+                    ),
+                  )}
+                </div>
+
+                <p className="explicacion-localias">
+                  Local = true · Visitante = false en el archivo JSON.
+                </p>
+              </div>
+
+              {/* VALIDACIONES Y ENVÍO */}
+              {mensajeError && (
+                <p className="mensaje-error" role="alert">
+                  {mensajeError}
+                </p>
+              )}
+
+              {mensajeExito && (
+                <p className="mensaje-exito" role="status">
+                  {mensajeExito}
+                </p>
+              )}
+
+              <div className="acciones-formulario">
+                <button
+                  type="submit"
+                  className="boton-calcular"
+                  disabled={calculando}
+                >
+                  {calculando ? "Calculando..." : "Calcular probabilidad"}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
 
         {tablaProbabilidades !== null && (
           <section className="seccion-resultado">
+            <div
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 2,
+                background: "#fff",
+                paddingBottom: 12,
+              }}
+            >
+              <button
+                type="button"
+                className="boton-secundario"
+                onClick={() => {
+                  cambiarTablaProbabilidades(null);
+                  cambiarCeldasVisibles(0);
+                  cambiarMensajeExito("");
+                }}
+              >
+                ← Volver
+              </button>
+            </div>
             <h2>Tabla de probabilidades</h2>
 
             <div className="contenedor-tabla-probabilidades">
