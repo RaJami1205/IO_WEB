@@ -380,3 +380,79 @@ La respuesta incluye:
 - `pasos` y `metadatos`.
 
 No se construye el árbol en la respuesta.
+
+## PARA EL FRONTEND
+
+ABB ÓPTIMO: ENTRADA Y SALIDA
+
+ENDPOINT
+POST http://127.0.0.1:8000/api/abb-optimo
+Content-Type: application/json
+
+ENTRADA
+{
+  "algoritmo": "abb-optimo",
+  "llaves": [
+    { "llave": "while", "peso": 12 },
+    { "llave": "if",    "peso": 20 },
+    { "llave": "do",    "peso": 5.5 },
+    { "llave": "for",   "peso": 8 }
+  ]
+}
+
+- llaves: de 1 a 10 elementos, en el orden que las escriba el usuario.
+  El backend las ordena; el frontend no tiene que ordenarlas.
+- llave: texto de 1 a 40 caracteres.
+- No se permiten llaves repetidas. Se comparan sin mayúsculas ni acentos:
+  "if" e "IF" son la misma llave, y también "árbol" y "Arbol". La ñ cuenta
+  como letra distinta de la n.
+- peso: número mayor que 0, con máximo 6 decimales. Se envía como número
+  JSON, no como texto.
+
+SALIDA (200)
+{
+  "algoritmo": "abb-optimo",
+  "resultado": {
+    "costoPromedio": 1.68,
+    "raiz": "if",
+    "llavesOrdenadas": [
+      { "posicion": 1, "llave": "do", "peso": 5.5,
+        "probabilidad": 0.1208..., "probabilidadRedondeada": 0.12 }
+    ],
+    "conclusion": "El costo promedio mínimo de búsqueda es 1.68 y la raíz del árbol óptimo es if."
+  },
+  "tablas": {
+    "A": [[0, 0.12, 0.42, 1.16, 1.68], [null, 0, 0.18, 0.8, 1.32], ...],
+    "R": [[null, 1, 2, 3, 3], [null, null, 2, 3, 3], ...]
+  },
+  "metadatos": { "filasDesde": 1, "columnasDesde": 0, "decimales": 2 }
+}
+
+- llavesOrdenadas: las llaves ya en orden alfabético. Se usan para la tabla
+  de probabilidades y para traducir los números de R a nombres de llave:
+  R = 3 corresponde a llavesOrdenadas[2].llave.
+- Mostrar probabilidadRedondeada; es la que se usa en todos los cálculos.
+- conclusion: texto listo para mostrar.
+
+CÓMO DIBUJAR A Y R
+- Las dos tablas tienen n+1 filas y n+1 columnas.
+- Filas: la posición 0 de la lista es la fila 1 de clase, así que hay que
+  mostrar (índice + 1) como etiqueta de fila.
+- Columnas: empiezan en 0, así que el índice es la etiqueta tal cual.
+- Las casillas en null se dejan vacías.
+- Los valores de A se muestran con 2 decimales, por ejemplo con
+  valor.toFixed(2).
+- R contiene números de llave. Opcionalmente se puede mostrar también el
+  nombre de cada una.
+
+ERRORES (422)
+{ "detail": [ { "loc": ["body", "llaves", 0, "peso"], "msg": "...", "type": "..." } ] }
+
+- Mostrar msg al usuario.
+- loc indica el campo con el error, y sirve para marcarlo en el formulario.
+- Si el backend no responde, mostrar un mensaje claro, nunca un error.
+
+PARA PROBAR (ejercicio de clase, Quiz 7)
+Atenas 0.30, NY 0.38, Paris 0.09, Praga 0.09, SJ 0.14
+Resultado esperado: costo 1.85, raíz NY.
+
