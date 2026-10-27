@@ -41,7 +41,6 @@ const modulos = [
     nombreCorto: "Mochila",
     descripcion:
       "Maximiza el valor de los objetos seleccionados respetando una capacidad.",
-    //ruta: null,
     ruta: "/Mochila",
   },
 ];
@@ -50,17 +49,30 @@ type PlantillaGeneralProps = {
   children: ReactNode;
 };
 
+type EstadoBackend = "consultando" | "activo" | "inactivo";
+
+type VerificacionBackend = {
+  ruta: string;
+  estado: EstadoBackend;
+};
+
 // Encabezado y pie compartidos por todas las páginas.
 export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
   const ubicacion = useLocation();
 
-  const [estadoBackend, setEstadoBackend] = useState<
-    "consultando" | "activo" | "inactivo"
-  >("consultando");
+  const [verificacion, setVerificacion] = useState<VerificacionBackend>({
+    ruta: ubicacion.pathname,
+    estado: "consultando",
+  });
 
+  const estadoBackend: EstadoBackend =
+    verificacion.ruta === ubicacion.pathname
+      ? verificacion.estado
+      : "consultando";
+
+  // Verifica el estado del backend al iniciar y al cambiar de pantalla.
   useEffect(() => {
-    setEstadoBackend("consultando");
-
+    const ruta = ubicacion.pathname;
     const controller = new AbortController();
     let montado = true;
 
@@ -68,7 +80,7 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
 
     const verificarBackend = async () => {
       try {
-        const respuesta = await fetch("api/health", {
+        const respuesta = await fetch("/api/health", {
           signal: controller.signal,
         });
 
@@ -76,14 +88,26 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
           throw new Error("Servicio no disponible");
         }
 
-        const datos = await respuesta.json();
+        const datos: unknown = await respuesta.json();
+
+        const activo =
+          typeof datos === "object" &&
+          datos !== null &&
+          "status" in datos &&
+          datos.status === "ok";
 
         if (montado) {
-          setEstadoBackend(datos.status === "ok" ? "activo" : "inactivo");
+          setVerificacion({
+            ruta,
+            estado: activo ? "activo" : "inactivo",
+          });
         }
       } catch {
         if (montado) {
-          setEstadoBackend("inactivo");
+          setVerificacion({
+            ruta,
+            estado: "inactivo",
+          });
         }
       } finally {
         clearTimeout(timeout);
@@ -98,6 +122,7 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
       controller.abort();
     };
   }, [ubicacion.pathname]);
+
   return (
     <div className="io-shell">
       <header className="io-header">
@@ -108,12 +133,20 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
               <small>IO WEB</small>
             </span>
           </Link>
+
           <div role="status" aria-live="polite">
-            {estadoBackend === "consultando" && <p> verificando...</p>}
+            {estadoBackend === "consultando" && (
+              <p>🟡 Verificando conexión...</p>
+            )}
 
-            {estadoBackend === "activo" && <p> 🟢 Servidor activo </p>}
+            {estadoBackend === "activo" && <p>🟢 Servidor activo</p>}
 
-            {estadoBackend === "inactivo" && <p>🔴 Servidor desconectado.</p>}
+            {estadoBackend === "inactivo" && (
+              <p>
+                🔴 Servidor desconectado. No se pudo establecer conexión con el
+                servicio.
+              </p>
+            )}
           </div>
 
           <nav className="io-nav" aria-label="Navegación principal">
@@ -144,13 +177,12 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
                     className="io-nav-link io-disabled"
                     tabIndex={0}
                     aria-disabled="true"
-                    //aria-describedby={`tooltip-${modulo.numero}`}
+                    aria-describedby={`tooltip-${modulo.numero}`}
                   >
                     {modulo.nombreCorto}
                   </span>
                 )}
 
-                {/* Tooltip al pasar el cursor */}
                 <div
                   className="io-tooltip"
                   id={`tooltip-${modulo.numero}`}
@@ -166,7 +198,7 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
 
                   {!modulo.ruta && (
                     <small className="io-tooltip-status">
-                      No esta disponible ahora
+                      No está disponible ahora
                     </small>
                   )}
                 </div>

@@ -480,7 +480,9 @@ export default function ArbolOptimo() {
               }
             }
           }
-        } catch {}
+        } catch {
+          // Si el backend no devuelve un JSON válido, se conserva el mensaje HTTP.
+        }
 
         throw new Error(detalle);
       }
