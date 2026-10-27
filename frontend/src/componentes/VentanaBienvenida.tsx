@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 const modulos = [
   {
@@ -24,7 +25,7 @@ const modulos = [
     nombreCorto: "Árbol óptimo",
     descripcion:
       "Encuentra la estructura de un árbol de búsqueda que minimiza su costo esperado.",
-    ruta: null,
+    ruta: "/ArbolOptimo",
   },
   {
     numero: "04",
@@ -32,7 +33,7 @@ const modulos = [
     nombreCorto: "Matrices",
     descripcion:
       "Encuentra el orden de multiplicación que requiere menos operaciones.",
-    ruta: null,
+    ruta: "/multiplicacion-matrices",
   },
   {
     numero: "05",
@@ -40,6 +41,7 @@ const modulos = [
     nombreCorto: "Mochila",
     descripcion:
       "Maximiza el valor de los objetos seleccionados respetando una capacidad.",
+    //ruta: null,
     ruta: "/Mochila",
   },
 ];
@@ -50,6 +52,52 @@ type PlantillaGeneralProps = {
 
 // Encabezado y pie compartidos por todas las páginas.
 export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
+  const ubicacion = useLocation();
+
+  const [estadoBackend, setEstadoBackend] = useState<
+    "consultando" | "activo" | "inactivo"
+  >("consultando");
+
+  useEffect(() => {
+    setEstadoBackend("consultando");
+
+    const controller = new AbortController();
+    let montado = true;
+
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const verificarBackend = async () => {
+      try {
+        const respuesta = await fetch("api/health", {
+          signal: controller.signal,
+        });
+
+        if (!respuesta.ok) {
+          throw new Error("Servicio no disponible");
+        }
+
+        const datos = await respuesta.json();
+
+        if (montado) {
+          setEstadoBackend(datos.status === "ok" ? "activo" : "inactivo");
+        }
+      } catch {
+        if (montado) {
+          setEstadoBackend("inactivo");
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
+
+    void verificarBackend();
+
+    return () => {
+      montado = false;
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [ubicacion.pathname]);
   return (
     <div className="io-shell">
       <header className="io-header">
@@ -60,6 +108,13 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
               <small>IO WEB</small>
             </span>
           </Link>
+          <div role="status" aria-live="polite">
+            {estadoBackend === "consultando" && <p> verificando...</p>}
+
+            {estadoBackend === "activo" && <p> 🟢 Servidor activo </p>}
+
+            {estadoBackend === "inactivo" && <p>🔴 Servidor desconectado.</p>}
+          </div>
 
           <nav className="io-nav" aria-label="Navegación principal">
             <NavLink
@@ -89,7 +144,7 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
                     className="io-nav-link io-disabled"
                     tabIndex={0}
                     aria-disabled="true"
-                    aria-describedby={`tooltip-${modulo.numero}`}
+                    //aria-describedby={`tooltip-${modulo.numero}`}
                   >
                     {modulo.nombreCorto}
                   </span>
@@ -110,7 +165,9 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
                   <p>{modulo.descripcion}</p>
 
                   {!modulo.ruta && (
-                    <small className="io-tooltip-status">En preparación</small>
+                    <small className="io-tooltip-status">
+                      No esta disponible ahora
+                    </small>
                   )}
                 </div>
               </div>

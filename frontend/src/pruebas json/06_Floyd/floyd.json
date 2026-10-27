@@ -1,0 +1,62 @@
+{
+  "algoritmo": "floyd",
+  "vertices": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+  ],
+  "arcos": [
+    {
+      "origen": "A",
+      "destino": "B",
+      "costo": 4
+    },
+    {
+      "origen": "A",
+      "destino": "C",
+      "costo": 11
+    },
+    {
+      "origen": "A",
+      "destino": "E",
+      "costo": 3
+    },
+    {
+      "origen": "B",
+      "destino": "C",
+      "costo": 5
+    },
+    {
+      "origen": "C",
+      "destino": "A",
+      "costo": 2
+    },
+    {
+      "origen": "C",
+      "destino": "D",
+      "costo": 4
+    },
+    {
+      "origen": "C",
+      "destino": "E",
+      "costo": 3
+    },
+    {
+      "origen": "D",
+      "destino": "B",
+      "costo": 3
+    },
+    {
+      "origen": "E",
+      "destino": "A",
+      "costo": 8
+    },
+    {
+      "origen": "E",
+      "destino": "D",
+      "costo": 6
+    }
+  ]
+}

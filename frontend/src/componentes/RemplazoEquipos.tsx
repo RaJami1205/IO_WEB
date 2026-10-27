@@ -44,8 +44,6 @@ type RespuestaReemplazo = {
   planesIncluyenInicioFin?: boolean;
 };
 
-const API_REEMPLAZO = "http://127.0.0.1:8000/api/reemplazo-equipos";
-
 function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
@@ -96,7 +94,7 @@ export function validarConfiguracion(datos: unknown): ConfiguracionRemplazo {
   }
   return datos as ConfiguracionRemplazo;
 }
-
+//Valida la respuesta del backend
 function validarRespuesta(datos: unknown): RespuestaReemplazo {
   if (
     !esObjeto(datos) ||
@@ -156,7 +154,7 @@ export default function RemplazoEquipos() {
     cambiarMensajeExito("");
     cambiarResultadoBackend(null);
   }
-
+  //carga archivos a solicitud de usuario
   async function cargarArchivoJson(evento: ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     if (!archivo) return;
@@ -186,7 +184,7 @@ export default function RemplazoEquipos() {
       evento.target.value = "";
     }
   }
-
+  //otiene la configuracion actual de los paramentros
   function obtenerConfiguracionActual(): ConfiguracionRemplazo {
     if (
       costoInicial.trim() === "" ||
@@ -209,7 +207,7 @@ export default function RemplazoEquipos() {
       })),
     });
   }
-
+  //guarda la configuracion actual en json
   function guardarConfiguracionJson() {
     cambiarMensajeError("");
     cambiarMensajeExito("");
@@ -232,7 +230,7 @@ export default function RemplazoEquipos() {
       );
     }
   }
-
+  //agrega un equipo a la lista
   function agregarEquipo(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     limpiarResultados();
@@ -269,37 +267,97 @@ export default function RemplazoEquipos() {
     cambiarValorVenta("");
     cambiarCostoMantenimiento("");
   }
-
+  //elimina un equipo de la tabla
   function eliminarEquipo(indice: number) {
     limpiarResultados();
     cambiarListaEquipos((equipos) => equipos.filter((_, i) => i !== indice));
   }
-
+  //llama al backend con los parametros depsues de validar si esta activo /api/reemplazo-equipos
   async function calcularReemplazo() {
     if (calculando) return;
-    limpiarResultados();
-    try {
-      const configuracion = obtenerConfiguracionActual();
-      cambiarCalculando(true);
-      const respuesta = await fetch(API_REEMPLAZO, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(configuracion),
-      });
 
-      if (!respuesta.ok) {
+    limpiarResultados();
+    cambiarCalculando(true);
+
+    try {
+      //  VERIFICAR SI EL BACKEND ESTÁ ACTIVO
+      try {
+        const salud = await fetch("/api/health", {
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (!salud.ok) {
+          throw new Error("Servidor no disponible");
+        }
+
+        const datosSalud: unknown = await salud.json();
+
+        if (!esObjeto(datosSalud) || datosSalud.status !== "ok") {
+          throw new Error("Servidor no disponible");
+        }
+      } catch {
         throw new Error(
-          "El servidor devolvió el error HTTP " + respuesta.status + ".",
+          "No se pudo conectar con el servidor. Verifica que el backend esté activo.",
         );
       }
+
+      //  VALIDAR LOS DATOS DEL FORMULARIO
+      const configuracion = obtenerConfiguracionActual();
+
+      //ENVIAR LOS DATOS AL BACKEND
+      let respuesta: Response;
+
+      try {
+        respuesta = await fetch("/api/reemplazo-equipos", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(configuracion),
+        });
+      } catch {
+        throw new Error(
+          "Se perdió la conexión con el servidor. Inténtalo nuevamente.",
+        );
+      }
+
+      //  VERIFICAR ERRORES DEVUELTOS POR EL BACKEND
+      if (!respuesta.ok) {
+        let mensaje = `El servidor devolvió HTTP ${respuesta.status}.`;
+
+        try {
+          const errorBackend: unknown = await respuesta.json();
+
+          if (esObjeto(errorBackend)) {
+            if (typeof errorBackend.detail === "string") {
+              mensaje = errorBackend.detail;
+            } else if (Array.isArray(errorBackend.detail)) {
+              const errores = errorBackend.detail
+                .filter(esObjeto)
+                .map((error) => error.msg)
+                .filter((msg): msg is string => typeof msg === "string");
+
+              if (errores.length > 0) {
+                mensaje = errores.join(". ");
+              }
+            }
+          }
+        } catch {}
+
+        throw new Error(mensaje);
+      }
+
+      //  PROCESAR LA RESPUESTA
       const datos: unknown = await respuesta.json();
+
       cambiarResultadoBackend(validarRespuesta(datos));
+
       cambiarMensajeExito("Cálculo realizado correctamente.");
     } catch (error) {
       cambiarMensajeError(
         error instanceof Error
           ? error.message
-          : "No se pudo calcular el reemplazo.",
+          : "No fue posible calcular el reemplazo de equipos.",
       );
     } finally {
       cambiarCalculando(false);

@@ -14,14 +14,16 @@ type ConfiguracionSerie = {
 //plantilla inicial
 const configuracionInicial: ConfiguracionSerie = {
   algoritmo: "series-deportivas",
-  juegos: 7,
-  ph: 0.58,
-  pr: 0.45,
-  formato: [true, true, false, false, false, true, true],
+  juegos: 1,
+  ph: 0,
+  pr: 0,
+  formato: [true],
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function validarConfiguracion(datosRecibidos: unknown): ConfiguracionSerie {
+export function validarConfiguracion(
+  datosRecibidos: unknown,
+): ConfiguracionSerie {
   if (
     typeof datosRecibidos !== "object" ||
     datosRecibidos === null ||
@@ -234,33 +236,86 @@ function SeriesDeportivas() {
       );
     }
   }
-
-  // Envía la configuración al backend y recibe la matriz.
   async function calcularSerie(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+
+    if (calculando) return;
+
     limpiarMensajes();
+    cambiarCalculando(true);
 
     try {
-      // Obtener y validar configuración del formulario.
+      try {
+        const salud = await fetch("/api/health", {
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (!salud.ok) {
+          throw new Error("Servidor no disponible");
+        }
+
+        const datosSalud = await salud.json();
+
+        if (datosSalud.status !== "ok") {
+          throw new Error("Servidor no disponible");
+        }
+      } catch {
+        throw new Error(
+          "No se pudo conectar con el servidor. Verifica que el backend esté activo.",
+        );
+      }
+
       const configuracion = obtenerConfiguracionActual();
 
-      cambiarCalculando(true);
+      let respuesta: Response;
 
-      // Enviar configuración a FastAPI.
-      const respuesta = await fetch(
-        "http://127.0.0.1:8000/api/series-deportivas",
-        {
+      try {
+        respuesta = await fetch("/api/series-deportivas", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(configuracion),
-        },
-      );
+        });
+      } catch {
+        throw new Error(
+          "Se perdió la conexión con el servidor. Inténtalo nuevamente.",
+        );
+      }
 
-      // Verificar respuesta HTTP.
       if (!respuesta.ok) {
-        throw new Error(`El servidor devolvió el error ${respuesta.status}.`);
+        let mensaje = `El servidor devolvió HTTP ${respuesta.status}.`;
+
+        try {
+          const errorBackend: unknown = await respuesta.json();
+
+          if (
+            typeof errorBackend === "object" &&
+            errorBackend !== null &&
+            "detail" in errorBackend
+          ) {
+            const detalle = errorBackend.detail;
+
+            if (typeof detalle === "string") {
+              mensaje = detalle;
+            } else if (Array.isArray(detalle)) {
+              const errores = detalle.flatMap((error: unknown) =>
+                typeof error === "object" &&
+                error !== null &&
+                "msg" in error &&
+                typeof error.msg === "string"
+                  ? [error.msg]
+                  : [],
+              );
+
+              if (errores.length > 0) {
+                mensaje = errores.join(". ");
+              }
+            }
+          }
+        } catch {}
+
+        throw new Error(mensaje);
       }
 
       const datos = await respuesta.json();
@@ -279,12 +334,13 @@ function SeriesDeportivas() {
         await new Promise((resolver) => setTimeout(resolver, 200));
         cambiarCeldasVisibles(i);
       }
+
       cambiarMensajeExito("Cálculo realizado correctamente.");
     } catch (error) {
       cambiarMensajeError(
         error instanceof Error
           ? error.message
-          : "Ocurrió un error al realizar el cálculo.",
+          : "No fue posible calcular la serie deportiva.",
       );
     } finally {
       cambiarCalculando(false);
