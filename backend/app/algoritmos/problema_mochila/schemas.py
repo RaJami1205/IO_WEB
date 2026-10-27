@@ -6,7 +6,6 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
-    JsonValue,
     StringConstraints,
     WithJsonSchema,
     model_validator,
@@ -68,27 +67,6 @@ class MochilaRequest(Contract):
         return self
 
 
-class Reference(Contract):
-    tabla: Literal["V"]
-    fila: Index
-    columna: Index
-
-
-class CellChange(Reference):
-    valor: Number
-    cantidad: Index
-    marca: Marca
-
-
-class Step(Contract):
-    orden: Annotated[int, Field(ge=1)]
-    tipo: Literal["inicializacion", "evaluacion", "actualizacion", "reconstruccion", "resultado"]
-    explicacion: str
-    foco: Reference | None
-    cambios: list[CellChange]
-    datos: dict[str, JsonValue] | None = None
-
-
 class Seleccion(Contract):
     indice: PositiveInt
     nombre: str
@@ -124,5 +102,4 @@ class MochilaResponse(Contract):
     algoritmo: Literal["mochila"]
     resultado: Result
     tablas: Tables
-    pasos: list[Step]
     metadatos: Metadata
