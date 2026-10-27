@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import ArbolOptimo from "../componentes/ArbolOptimo";
 
 afterEach(cleanup);
@@ -36,22 +42,32 @@ describe("Árbol Óptimo: carga de archivos JSON", () => {
 
     fireEvent.change(input, { target: { files: [archivo] } });
 
-    expect(
-      await screen.findByText("JSON cargado. Puedes editar todas las llaves."),
-    ).toBeTruthy();
-    expect(
-      (screen.getByLabelText("Texto de llave 1") as HTMLInputElement).value,
-    ).toBe("while");
-    expect(
-      (screen.getByLabelText("Peso de llave 1") as HTMLInputElement).value,
-    ).toBe("12");
-    expect(
-      (screen.getByLabelText("Texto de llave 2") as HTMLInputElement).value,
-    ).toBe("if");
-    expect(
-      (screen.getByLabelText("Peso de llave 3") as HTMLInputElement).value,
-    ).toBe("5.5");
+    expect(await screen.findByText("JSON cargado correctamente.")).toBeTruthy();
+
     expect(screen.getByText("3 / 10 llaves")).toBeTruthy();
+
+    const tabla = screen.getByRole("table");
+    const filas = within(tabla).getAllByRole("row");
+
+    expect(filas).toHaveLength(4);
+
+    const celdasFila1 = within(filas[1])
+      .getAllByRole("cell")
+      .map((celda) => celda.textContent?.trim());
+
+    expect(celdasFila1.slice(0, 3)).toEqual(["1", "while", "12"]);
+
+    const celdasFila2 = within(filas[2])
+      .getAllByRole("cell")
+      .map((celda) => celda.textContent?.trim());
+
+    expect(celdasFila2.slice(0, 3)).toEqual(["2", "if", "20"]);
+
+    const celdasFila3 = within(filas[3])
+      .getAllByRole("cell")
+      .map((celda) => celda.textContent?.trim());
+
+    expect(celdasFila3.slice(0, 3)).toEqual(["3", "do", "5.5"]);
   });
 
   it("rechaza un archivo con JSON mal formado", async () => {
@@ -79,6 +95,7 @@ describe("Árbol Óptimo: carga de archivos JSON", () => {
         ],
       }),
     );
+
     const input = screen.getByLabelText("Cargar JSON") as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [archivo] } });
