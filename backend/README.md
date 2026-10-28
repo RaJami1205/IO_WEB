@@ -306,6 +306,153 @@ pendientes, aplicar solo `cambios` en orden reconstruye V. Hay
 `2 + 2·C·n + n + 1` eventos: dos de inicialización, una evaluación y una
 actualización por casilla, una reconstrucción por objeto y el resultado.
 
-Referencias: el JSON oficial produce 43 en 0/1, 63 en acotada y 70 en no acotada,
-con 96 eventos. El caso 0/1 con C = 4, A (2, 5), B (2, 5) y C (4, 10) tiene un
-empate y devuelve {A, B}. Falta contrastar el módulo con ejercicios resueltos en clase.
+
+## Árbol Binario de Búsqueda Óptimo (P3)
+
+`POST /api/abb-optimo` recibe el contrato oficial:
+
+```json
+{
+  "algoritmo": "abb-optimo",
+  "llaves": [
+    { "llave": "while", "peso": 12 },
+    { "llave": "if",    "peso": 20 },
+    { "llave": "do",    "peso": 5.5 },
+    { "llave": "for",   "peso": 8 }
+  ]
+}
+```
+
+`llaves` tiene de 1 a 10 elementos. `llave` es un texto de 1 a 40 caracteres y
+`peso` un número positivo de hasta 6 decimales y como máximo 10^12. Las llaves se
+reciben en el orden del usuario y el programa las ordena alfabéticamente sin
+distinguir mayúsculas e ignorando acentos; la ñ es una letra aparte, después de
+la n. Por eso "if" e "IF", o "árbol" y "Arbol", cuentan como llaves repetidas y se
+rechazan con 422, mientras que "año" y "ano" son llaves distintas. Los modelos
+rechazan campos adicionales, booleanos numéricos, cadenas numéricas y valores no
+finitos; `detail` conserva `loc`, `msg` y `type` y omite la entrada inválida.
+
+Ejemplo PowerShell con el servidor iniciado:
+
+```powershell
+$body = @{
+    algoritmo = "abb-optimo"
+    llaves = @(
+        @{ llave = "while"; peso = 12 }
+        @{ llave = "if"; peso = 20 }
+        @{ llave = "do"; peso = 5.5 }
+        @{ llave = "for"; peso = 8 }
+    )
+} | ConvertTo-Json -Depth 10
+
+$respuesta = Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8000/api/abb-optimo" `
+    -Method Post `
+    -ContentType "application/json; charset=utf-8" `
+    -Body ([System.Text.Encoding]::UTF8.GetBytes($body))
+
+$respuesta.resultado | ConvertTo-Json -Depth 10
+$respuesta.tablas.A | ConvertTo-Json -Compress
+$respuesta.tablas.R | ConvertTo-Json -Compress
+$respuesta.pasos.Count
+```
+
+Cada peso se convierte en probabilidad, peso / suma de pesos, y se redondea a dos
+decimales con redondeo escolar (0.125 → 0.13), como en clase. El resto del cálculo
+usa esas probabilidades redondeadas, por lo que los valores de A tienen dos
+decimales exactos y las probabilidades pueden no sumar exactamente 1.
+
+A[i][j] es el costo promedio mínimo del subárbol con las llaves i..j y R[i][j] la
+llave elegida como raíz. Las tablas tienen filas i = 1..n+1 y columnas j = 0..n:
+
+- A[i][i−1] = 0 (diagonal de ceros).
+- A[i][i] = p_i y R[i][i] = i (diagonal de probabilidades).
+- A[i][j] = min_k [A[i][k−1] + A[k+1][j]] + (p_i + … + p_j), con k = i..j.
+
+Se llena por grupos de 2, 3, …, n llaves. Ante un empate se elige el menor k.
+
+La respuesta incluye:
+
+- `resultado`: el costo promedio óptimo A[1][n], la llave raíz R[1][n], las llaves
+  ordenadas con su peso, probabilidad exacta y probabilidad redondeada, y la conclusión.
+- `tablas`: `A` y `R`. La posición 0 de cada lista es la fila 1 (`filasDesde: 1`,
+  `columnasDesde: 0`) y las casillas que no aplican van en `null`.
+- `pasos` y `metadatos`.
+
+No se construye el árbol en la respuesta.
+
+## PARA EL FRONTEND
+
+ABB ÓPTIMO: ENTRADA Y SALIDA
+
+ENDPOINT
+POST http://127.0.0.1:8000/api/abb-optimo
+Content-Type: application/json
+
+ENTRADA
+{
+  "algoritmo": "abb-optimo",
+  "llaves": [
+    { "llave": "while", "peso": 12 },
+    { "llave": "if",    "peso": 20 },
+    { "llave": "do",    "peso": 5.5 },
+    { "llave": "for",   "peso": 8 }
+  ]
+}
+
+- llaves: de 1 a 10 elementos, en el orden que las escriba el usuario.
+  El backend las ordena; el frontend no tiene que ordenarlas.
+- llave: texto de 1 a 40 caracteres.
+- No se permiten llaves repetidas. Se comparan sin mayúsculas ni acentos:
+  "if" e "IF" son la misma llave, y también "árbol" y "Arbol". La ñ cuenta
+  como letra distinta de la n.
+- peso: número mayor que 0, con máximo 6 decimales. Se envía como número
+  JSON, no como texto.
+
+SALIDA (200)
+{
+  "algoritmo": "abb-optimo",
+  "resultado": {
+    "costoPromedio": 1.68,
+    "raiz": "if",
+    "llavesOrdenadas": [
+      { "posicion": 1, "llave": "do", "peso": 5.5,
+        "probabilidad": 0.1208..., "probabilidadRedondeada": 0.12 }
+    ],
+    "conclusion": "El costo promedio mínimo de búsqueda es 1.68 y la raíz del árbol óptimo es if."
+  },
+  "tablas": {
+    "A": [[0, 0.12, 0.42, 1.16, 1.68], [null, 0, 0.18, 0.8, 1.32], ...],
+    "R": [[null, 1, 2, 3, 3], [null, null, 2, 3, 3], ...]
+  },
+  "metadatos": { "filasDesde": 1, "columnasDesde": 0, "decimales": 2 }
+}
+
+- llavesOrdenadas: las llaves ya en orden alfabético. Se usan para la tabla
+  de probabilidades y para traducir los números de R a nombres de llave:
+  R = 3 corresponde a llavesOrdenadas[2].llave.
+- Mostrar probabilidadRedondeada; es la que se usa en todos los cálculos.
+- conclusion: texto listo para mostrar.
+
+CÓMO DIBUJAR A Y R
+- Las dos tablas tienen n+1 filas y n+1 columnas.
+- Filas: la posición 0 de la lista es la fila 1 de clase, así que hay que
+  mostrar (índice + 1) como etiqueta de fila.
+- Columnas: empiezan en 0, así que el índice es la etiqueta tal cual.
+- Las casillas en null se dejan vacías.
+- Los valores de A se muestran con 2 decimales, por ejemplo con
+  valor.toFixed(2).
+- R contiene números de llave. Opcionalmente se puede mostrar también el
+  nombre de cada una.
+
+ERRORES (422)
+{ "detail": [ { "loc": ["body", "llaves", 0, "peso"], "msg": "...", "type": "..." } ] }
+
+- Mostrar msg al usuario.
+- loc indica el campo con el error, y sirve para marcarlo en el formulario.
+- Si el backend no responde, mostrar un mensaje claro, nunca un error.
+
+PARA PROBAR (ejercicio de clase, Quiz 7)
+Atenas 0.30, NY 0.38, Paris 0.09, Praga 0.09, SJ 0.14
+Resultado esperado: costo 1.85, raíz NY.
+

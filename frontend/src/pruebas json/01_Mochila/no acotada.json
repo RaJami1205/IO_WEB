@@ -1,0 +1,22 @@
+{
+  "algoritmo": "mochila",
+  "variante": "no-acotada",
+  "capacidad": 10,
+  "objetos": [
+    {
+      "nombre": "Botella de agua",
+      "peso": 4,
+      "valor": 11
+    },
+    {
+      "nombre": "Calcetines",
+      "peso": 3,
+      "valor": 7
+    },
+    {
+      "nombre": "Paquete de galletas",
+      "peso": 5,
+      "valor": 12
+    }
+  ]
+}
