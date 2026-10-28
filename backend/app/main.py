@@ -9,7 +9,6 @@ from app.algoritmos.problema_mochila.router import router as mochila_router
 from app.algoritmos.Mult_matrices.router import router as matrices_router
 from app.core.config import get_cors_origins
 
-
 def create_app() -> FastAPI:
     app = FastAPI(title="IO WEB API")
     app.add_middleware(
@@ -24,6 +23,7 @@ def create_app() -> FastAPI:
     app.include_router(replacement_router)
     app.include_router(mochila_router)
     app.include_router(matrices_router)
+
     return app
 
 
