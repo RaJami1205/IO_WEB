@@ -19,14 +19,20 @@ describe("Reemplazo de Equipos: validación de entrada", () => {
   });
 
   it("rechaza períodos incompletos", () => {
-    expect(() => validarConfiguracion({
-      ...datos,
-      periodos: datos.periodos.slice(0, 2),
-    })).toThrow(/período/i);
+    expect(() =>
+      validarConfiguracion({
+        ...datos,
+        periodos: datos.periodos.slice(0, 2),
+      }),
+    ).toThrow(/período/i);
   });
 
   it("rechaza costos negativos y plazos decimales", () => {
-    expect(() => validarConfiguracion({ ...datos, costoInicial: -1 })).toThrow(/costo inicial/i);
-    expect(() => validarConfiguracion({ ...datos, plazo: 2.5 })).toThrow(/plazo/i);
+    expect(() => validarConfiguracion({ ...datos, costoInicial: -1 })).toThrow(
+      /costo inicial/i,
+    );
+    expect(() => validarConfiguracion({ ...datos, plazo: 2.5 })).toThrow(
+      /plazo/i,
+    );
   });
 });
