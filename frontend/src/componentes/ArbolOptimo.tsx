@@ -609,7 +609,6 @@ export default function ArbolOptimo() {
                 <div className="encabezado-seccion-abb">
                   <div>
                     <h2>Llaves agregadas</h2>
-                    <p>Podés eliminar cualquier registro antes de calcular.</p>
                   </div>
                 </div>
                 <div className="tabla-entrada-scroll-abb">

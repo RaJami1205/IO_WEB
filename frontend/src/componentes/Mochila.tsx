@@ -419,10 +419,6 @@ export default function Mochila() {
 
           <h1>Problema de la Mochila</h1>
 
-          <p>
-            Mochila 0-1, acotada y no-acotada. El cálculo se realiza en FastAPI.
-          </p>
-
           {/* 1. DATOS DE ENTRADA           */}
 
           <section className="mochila-panel">
