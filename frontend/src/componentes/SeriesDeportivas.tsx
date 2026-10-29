@@ -364,10 +364,6 @@ function SeriesDeportivas() {
 
               <h1>Series Deportivas</h1>
 
-              <p>
-                Configura las probabilidades y el orden de los partidos para
-                calcular la probabilidad de que el equipo A gane la serie.
-              </p>
             </header>
 
             <form
@@ -379,10 +375,7 @@ function SeriesDeportivas() {
               <div className="seccion-configuracion">
                 <div>
                   <h2>Configuración de la serie</h2>
-                  <p>
-                    Ingresa los datos manualmente o carga un archivo JSON para
-                    editarlos.
-                  </p>
+
                 </div>
 
                 <div className="acciones-archivo">
@@ -499,7 +492,7 @@ function SeriesDeportivas() {
                 <div className="encabezado-localias">
                   <div>
                     <h2>Orden de los partidos</h2>
-                    <p>Selecciona dónde jugará el equipo A en cada partido.</p>
+
                   </div>
 
                   <span className="contador-partidos">

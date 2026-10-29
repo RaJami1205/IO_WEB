@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "../estilos/Mochila.css";
 import type { ChangeEvent, FormEvent } from "react";
 
@@ -161,11 +161,41 @@ export default function Mochila() {
   const [calculando, cambiarCalculando] = useState(false);
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
+  const [celdasVisibles, cambiarCeldasVisibles] = useState(0);
+
+  // Cuenta las celdas de resultados, sin incluir la columna inicial.
+  const totalCeldas =
+    resultadoBackend?.tablas.V.reduce(
+      (total, fila) => total + Math.max(0, fila.length - 1),
+      0,
+    ) ?? 0;
+
+  // Muestra progresivamente las celdas cuando llega el resultado del backend.
+  useEffect(() => {
+    if (!resultadoBackend || totalCeldas === 0) return;
+
+    let avance = 0;
+    const intervalo = Math.max(
+      12,
+      Math.min(85, Math.floor(2500 / totalCeldas)),
+    );
+    const temporizador = window.setInterval(() => {
+      avance += 1;
+      cambiarCeldasVisibles(avance);
+
+      if (avance >= totalCeldas) {
+        window.clearInterval(temporizador);
+      }
+    }, intervalo);
+
+    return () => window.clearInterval(temporizador);
+  }, [resultadoBackend, totalCeldas]);
 
   function limpiarResultados() {
     cambiarMensajeError("");
     cambiarMensajeExito("");
     cambiarResultadoBackend(null);
+    cambiarCeldasVisibles(0);
   }
 
   //metodo que carga el json del usuario y actualiza
@@ -419,9 +449,7 @@ export default function Mochila() {
 
           <h1>Problema de la Mochila</h1>
 
-          <p>
-            Mochila 0-1, acotada y no-acotada. El cálculo se realiza en FastAPI.
-          </p>
+          
 
           {/* 1. DATOS DE ENTRADA           */}
 
@@ -649,6 +677,7 @@ export default function Mochila() {
               onClick={() => {
                 cambiarResultadoBackend(null);
                 cambiarMensajeExito("");
+                cambiarCeldasVisibles(0);
               }}
             >
               ← Volver
@@ -799,43 +828,70 @@ export default function Mochila() {
                                 <tr key={capacidadFila}>
                                   <th>{capacidadFila}</th>
 
-                                  {fila.map((dato, indice) =>
-                                    indice === 0 ? null : (
+                                  {fila.map((dato, indice) => {
+                                    if (indice === 0) return null;
+
+                                    // Numera las celdas por filas para revelarlas en orden.
+                                    const posicion =
+                                      resultadoBackend.tablas.V.slice(
+                                        0,
+                                        capacidadFila,
+                                      ).reduce(
+                                        (acumulado, anterior) =>
+                                          acumulado +
+                                          Math.max(0, anterior.length - 1),
+                                        0,
+                                      ) + indice;
+                                    const visible = posicion <= celdasVisibles;
+                                    const marca =
+                                      resultadoBackend.tablas.marca[
+                                        capacidadFila
+                                      ]?.[indice];
+
+                                    return (
                                       <td
                                         key={indice}
                                         className={
-                                          resultadoBackend.tablas.marca[
-                                            capacidadFila
-                                          ]?.[indice] === "verde"
-                                            ? "celda-verde"
-                                            : resultadoBackend.tablas.marca[
-                                                  capacidadFila
-                                                ]?.[indice] === "rojo"
-                                              ? "celda-roja"
-                                              : ""
+                                          !visible
+                                            ? ""
+                                            : marca === "verde"
+                                              ? "celda-verde"
+                                              : marca === "rojo"
+                                                ? "celda-roja"
+                                                : ""
                                         }
-                                        title={`
+                                        style={{
+                                          transition:
+                                            "background-color 180ms ease",
+                                        }}
+                                        title={
+                                          visible
+                                            ? `
 Valor: ${textoCelda(dato)}
 
 Copias elegidas: ${textoCelda(
-                                          resultadoBackend.tablas.decision[
-                                            capacidadFila
-                                          ]?.[indice],
-                                        )}
+                                                resultadoBackend.tablas
+                                                  .decision[capacidadFila]?.[
+                                                  indice
+                                                ],
+                                              )}
 
 Opciones: ${textoCelda(
-                                          resultadoBackend.tablas.opciones[
-                                            capacidadFila
-                                          ]?.[indice],
-                                        )}
+                                                resultadoBackend.tablas
+                                                  .opciones[capacidadFila]?.[
+                                                  indice
+                                                ],
+                                              )}
 
 Marca: ${textoCelda(resultadoBackend.tablas.marca[capacidadFila]?.[indice])}
-`}
+`
+                                            : "Pendiente de mostrar"
+                                        }
                                       >
-                                        {textoCelda(dato)}
+                                        {visible ? textoCelda(dato) : ""}
                                       </td>
-                                    ),
-                                  )}
+                                    );
+                                  })}
                                 </tr>
                               ),
                             )}

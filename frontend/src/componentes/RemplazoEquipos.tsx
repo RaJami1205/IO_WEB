@@ -375,16 +375,11 @@ export default function RemplazoEquipos() {
         <>
           <p className="reemplazo-etiqueta">Investigación de Operaciones</p>
           <h1>Reemplazo de Equipos</h1>
-          <p className="reemplazo-introduccion">
-            Ingresa los costos de cada año de vida útil y calcula los planes
-            óptimos de reemplazo mediante el backend.
-          </p>
 
           <section className="reemplazo-panel">
             <div className="reemplazo-titulo-seccion">
               <div>
                 <h2>1. Datos generales</h2>
-                <p>Puedes cargar un JSON o ingresar los datos manualmente.</p>
               </div>
               <div className="reemplazo-archivo">
                 <label>
