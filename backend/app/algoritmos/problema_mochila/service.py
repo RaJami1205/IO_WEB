@@ -9,6 +9,7 @@ def json_numbers(value):
     if isinstance(value, Fraction):
         if value.denominator == 1:
             return value.numerator
+        # con los limites del schema nunca deberia pasar pero se protege la salida
         try:
             number = float(value)
         except OverflowError as exc:
@@ -31,43 +32,71 @@ def topes_por_variante(request: MochilaRequest) -> list[int | None]:
     return [None] * len(request.objetos)
 
 
+def armar_seleccion(request: MochilaRequest, valores: list[Fraction], copias_elegidas: list[int]) -> list[dict]:
+    #lista solo los objetos que se llevan con sus copias peso y valor
+    seleccion = []
+    for posicion, copias in enumerate(copias_elegidas):
+        if copias == 0:
+            continue
+        objeto = request.objetos[posicion]
+        seleccion.append({
+            "indice": posicion + 1,
+            "nombre": objeto.nombre,
+            "cantidad": copias,
+            "pesoTotal": copias * objeto.peso,
+            "valorTotal": copias * valores[posicion],
+        })
+    return seleccion
+
+
 def resolver_mochila(request: MochilaRequest) -> MochilaResponse:
-    objetos = request.objetos
     capacidad_total = request.capacidad
-    cantidad_objetos = len(objetos)
-    nombres = [objeto.nombre for objeto in objetos]
-    valores = [Fraction(objeto.valor) for objeto in objetos]
+    cantidad_objetos = len(request.objetos)
 
-    solucion = solve(capacidad_total, [objeto.peso for objeto in objetos], valores,
-                     topes_por_variante(request), nombres)
+    nombres = []
+    pesos = []
+    valores = []
+    for objeto in request.objetos:
+        nombres.append(objeto.nombre)
+        pesos.append(objeto.peso)
+        valores.append(Fraction(objeto.valor))
 
-    seleccion = [
-        {"indice": posicion + 1, "nombre": nombres[posicion], "cantidad": copias,
-         "pesoTotal": copias * objetos[posicion].peso, "valorTotal": copias * valores[posicion]}
-        for posicion, copias in enumerate(solucion.copias_elegidas) if copias > 0
-    ]
-    valor_optimo = json_numbers(solucion.tabla_valores[capacidad_total][cantidad_objetos])
-    peso_usado = sum(item["pesoTotal"] for item in seleccion)
+    topes = topes_por_variante(request)
+    solucion = solve(capacidad_total, pesos, valores, topes)
+
+    seleccion = armar_seleccion(request, valores, solucion.copias_elegidas)
+    valor_optimo = solucion.tabla_valores[capacidad_total][cantidad_objetos]
+    peso_usado = 0
+    for item in seleccion:
+        peso_usado = peso_usado + item["pesoTotal"]
 
     if seleccion:
-        conclusion = (f"Con capacidad {capacidad_total} el valor máximo es {valor_optimo}, "
+        conclusion = (f"Con capacidad {capacidad_total} el valor máximo es {json_numbers(valor_optimo)}, "
                       f"usando {peso_usado} unidades de peso.")
     else:
         conclusion = f"Ningún objeto cabe en la mochila de capacidad {capacidad_total}. El valor máximo es 0."
 
-    solucion.pasos.append({
-        "orden": len(solucion.pasos) + 1, "tipo": "resultado", "explicacion": conclusion,
-        "foco": {"tabla": "V", "fila": capacidad_total, "columna": cantidad_objetos}, "cambios": [],
-    })
-    return MochilaResponse.model_validate(json_numbers({
+    respuesta = {
         "algoritmo": "mochila",
         "resultado": {
-            "valorOptimo": valor_optimo, "pesoUsado": peso_usado, "seleccion": seleccion,
-            "hayEmpates": solucion.hay_empates, "conclusion": conclusion,
+            "valorOptimo": valor_optimo,
+            "pesoUsado": peso_usado,
+            "seleccion": seleccion,
+            "hayEmpates": solucion.hay_empates,
+            "conclusion": conclusion,
         },
-        "tablas": {"V": solucion.tabla_valores, "decision": solucion.tabla_copias,
-                   "opciones": solucion.tabla_opciones, "marca": solucion.tabla_marcas},
-        "pasos": solucion.pasos,
-        "metadatos": {"variante": request.variante, "ejeFilas": "capacidad", "ejeColumnas": "objeto",
-                      "indicesDesde": 0, "objetos": nombres},
-    }))
+        "tablas": {
+            "V": solucion.tabla_valores,
+            "decision": solucion.tabla_copias,
+            "opciones": solucion.tabla_opciones,
+            "marca": solucion.tabla_marcas,
+        },
+        "metadatos": {
+            "variante": request.variante,
+            "ejeFilas": "capacidad",
+            "ejeColumnas": "objeto",
+            "indicesDesde": 0,
+            "objetos": nombres,
+        },
+    }
+    return MochilaResponse.model_validate(json_numbers(respuesta))
