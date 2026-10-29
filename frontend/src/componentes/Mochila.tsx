@@ -3,7 +3,7 @@ import "../estilos/Mochila.css";
 import type { ChangeEvent, FormEvent } from "react";
 
 type Variante = "acotada" | "0-1" | "no-acotada";
-//nombre del objeto
+
 type ObjetoMochila = {
   nombre: string;
   peso: number;
@@ -29,11 +29,13 @@ type RespuestaMochila = {
   metadatos: Record<string, unknown>;
 };
 
+const API_MOCHILA = "http://127.0.0.1:8000/api/problema-mochila";
+
 /** Identifica un objeto JSON (excluye null y arreglos). */
 function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
-//valida que el json cumpla con el formato dado en el requerimiento
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function validarConfiguracion(datos: unknown): ConfiguracionMochila {
   if (!esObjeto(datos)) throw new Error("El JSON debe ser un objeto.");
@@ -66,7 +68,7 @@ export function validarConfiguracion(datos: unknown): ConfiguracionMochila {
   ) {
     throw new Error("Debes proporcionar entre 1 y 10 objetos.");
   }
-  //objetos
+
   const nombres = new Set<string>();
   for (const [indice, objeto] of datos.objetos.entries()) {
     if (
@@ -113,7 +115,7 @@ export function validarConfiguracion(datos: unknown): ConfiguracionMochila {
   return datos as ConfiguracionMochila;
 }
 
-//valida la respuesta del back
+/** Valida las secciones oficiales sin asumir nombres dentro de resultado. */
 function validarRespuesta(datos: unknown): RespuestaMochila {
   if (
     !esObjeto(datos) ||
@@ -139,14 +141,14 @@ function validarRespuesta(datos: unknown): RespuestaMochila {
   };
 }
 
-//convierte dato en texto para mostrar
+/** Convierte un dato simple en texto para mostrar los campos originales del JSON. */
 function textoCelda(valor: unknown): string {
   if (valor === null) return "null";
   if (valor === undefined) return "—";
   if (typeof valor === "object") return JSON.stringify(valor);
   return String(valor);
 }
-//funcion mochila incluye todo el calculo y llamadas durante la ejecucion
+
 export default function Mochila() {
   const [variante, cambiarVariante] = useState<Variante>("0-1");
   const [capacidad, cambiarCapacidad] = useState("");
@@ -162,20 +164,20 @@ export default function Mochila() {
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
 
+  /** Limpia avisos y datos calculados para no mostrar resultados desactualizados. */
   function limpiarResultados() {
     cambiarMensajeError("");
     cambiarMensajeExito("");
     cambiarResultadoBackend(null);
   }
 
-  //metodo que carga el json del usuario y actualiza
+  /** Carga el JSON de entrada y actualiza la lista de objetos. */
   async function cargarArchivoJson(evento: ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     if (!archivo) return;
     limpiarResultados();
     try {
       const configuracion = validarConfiguracion(
-        //valida que cumpla con los parametros. luego actualiza
         JSON.parse(await archivo.text()),
       );
       cambiarVariante(configuracion.variante);
@@ -194,7 +196,11 @@ export default function Mochila() {
     evento.target.value = "";
   }
 
-  //obtiene los parametros actuales para enviar al backend a calcular
+  /**
+   * Genera el cuerpo del POST con los campos exactos del backend:
+   * algoritmo, variante, capacidad y objetos (nombre, peso, valor, cantidad).
+   * Incluye todos los objetos agregados a la lista.
+   */
   function obtenerConfiguracionActual(): ConfiguracionMochila {
     if (capacidad.trim() === "")
       throw new Error("Ingresa la capacidad de la mochila.");
@@ -212,7 +218,7 @@ export default function Mochila() {
     });
   }
 
-  //descarga el json actual a solicitud del usuario
+  /** Descarga el JSON de entrada que se enviaría al servidor. */
   function guardarConfiguracionJson() {
     cambiarMensajeError("");
     try {
@@ -236,7 +242,7 @@ export default function Mochila() {
     }
   }
 
-  //valida y obtiene un nuevo objeto para ingreso a la tabla, se exige cantidad solo cuando se requiere
+  /** Valida y agrega un objeto a la tabla; cantidad solo se exige en acotada. */
   function agregarEquipo(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     limpiarResultados();
@@ -295,114 +301,61 @@ export default function Mochila() {
     cambiarCantidad("");
   }
 
-  //elimina objeto de la tabla de equipos
+  /** Elimina un objeto de la lista. */
   function eliminarEquipo(indice: number) {
     limpiarResultados();
     cambiarListaEquipos((objetos) => objetos.filter((_, i) => i !== indice));
   }
 
-  //solicita el ingreso de cantidad cuando se escoje el cambio de variable
+  /** Permite editar la cantidad disponible cuando se cambia a variante acotada. */
   function actualizarCantidadObjeto(indice: number, texto: string) {
     limpiarResultados();
     cambiarListaEquipos((objetos) =>
-      objetos.map(
-        (objeto, i) =>
-          i === indice
-            ? { ...objeto, cantidad: texto === "" ? undefined : Number(texto) }
-            : objeto,
-        9,
+      objetos.map((objeto, i) =>
+        i === indice
+          ? { ...objeto, cantidad: texto === "" ? undefined : Number(texto) }
+          : objeto,
       ),
     );
   }
 
-  //envia toda la informacion al backen con fastapi
+  /** Envía el JSON a FastAPI y guarda resultado, tablas y metadatos; no muestra pasos. */
   async function calcularMochila() {
     if (calculando) return;
-
     limpiarResultados();
-    cambiarCalculando(true);
-
     try {
-      try {
-        const salud = await fetch("/api/health", {
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (!salud.ok) {
-          throw new Error("Servidor no disponible");
-        }
-
-        const datosSalud: unknown = await salud.json();
-
-        if (!esObjeto(datosSalud) || datosSalud.status !== "ok") {
-          throw new Error("Servidor no disponible");
-        }
-      } catch {
-        throw new Error(
-          "No se pudo conectar con el servidor. Verifica que el backend esté activo.",
-        );
-      }
-
       const configuracion = obtenerConfiguracionActual();
-
-      let respuesta: Response;
-
-      try {
-        respuesta = await fetch("/api/problema-mochila", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(configuracion),
-        });
-      } catch {
-        throw new Error(
-          "Se perdió la conexión con el servidor. Inténtalo nuevamente.",
-        );
-      }
-
+      cambiarCalculando(true);
+      const respuesta = await fetch(API_MOCHILA, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(configuracion),
+      });
       if (!respuesta.ok) {
-        let mensaje = `Error HTTP ${respuesta.status} del servidor.`;
-
-        try {
+        if (respuesta.status === 422) {
           const errorBackend: unknown = await respuesta.json();
-
-          if (esObjeto(errorBackend)) {
-            if (typeof errorBackend.detail === "string") {
-              mensaje = errorBackend.detail;
-            } else if (Array.isArray(errorBackend.detail)) {
-              const detalles = errorBackend.detail
-                .filter(esObjeto)
-                .map((detalle) => {
-                  const ubicacion = Array.isArray(detalle.loc)
-                    ? detalle.loc.join(".")
-                    : "entrada";
-
-                  return `${ubicacion}: ${String(detalle.msg)} (${String(detalle.type)})`;
-                });
-
-              if (detalles.length > 0) {
-                mensaje = detalles.join(" | ");
-              }
-            }
+          if (esObjeto(errorBackend) && Array.isArray(errorBackend.detail)) {
+            const detalles = errorBackend.detail
+              .filter(esObjeto)
+              .map((detalle) => {
+                const ubicacion = Array.isArray(detalle.loc)
+                  ? detalle.loc.join(".")
+                  : "entrada";
+                return `${ubicacion}: ${String(detalle.msg)} (${String(detalle.type)})`;
+              });
+            throw new Error(
+              detalles.join(" | ") || "Datos rechazados por el servidor.",
+            );
           }
-        } catch {
-          // Si el backend no devuelve un JSON válido, se conserva el mensaje HTTP.
         }
-
-        throw new Error(mensaje);
+        throw new Error(`Error HTTP ${respuesta.status} del servidor.`);
       }
-
-      const datos: unknown = await respuesta.json();
-
-      cambiarResultadoBackend(validarRespuesta(datos));
+      cambiarResultadoBackend(validarRespuesta(await respuesta.json()));
       cambiarMostrarTodoResultado(true);
       cambiarMensajeExito("Cálculo completado.");
     } catch (error) {
       cambiarMensajeError(
-        error instanceof Error
-          ? error.message
-          : "No fue posible calcular el problema de la mochila.",
+        error instanceof Error ? error.message : "No se pudo calcular.",
       );
     } finally {
       cambiarCalculando(false);
@@ -423,7 +376,9 @@ export default function Mochila() {
             Mochila 0-1, acotada y no-acotada. El cálculo se realiza en FastAPI.
           </p>
 
+          {/* ============================= */}
           {/* 1. DATOS DE ENTRADA           */}
+          {/* ============================= */}
 
           <section className="mochila-panel">
             <h2>1. Datos de entrada</h2>
@@ -477,7 +432,9 @@ export default function Mochila() {
             </div>
           </section>
 
+          {/* ============================= */}
           {/* 2. AGREGAR OBJETO            */}
+          {/* ============================= */}
 
           <section className="mochila-panel">
             <h2>2. Agregar objeto</h2>
@@ -544,7 +501,9 @@ export default function Mochila() {
             </form>
           </section>
 
-          {/* 3. OBJETOS AGREGADOS tabla        */}
+          {/* ============================= */}
+          {/* 3. OBJETOS AGREGADOS         */}
+          {/* ============================= */}
 
           <section className="mochila-panel">
             <h2>3. Objetos agregados ({listaEquipos.length})</h2>
@@ -615,7 +574,9 @@ export default function Mochila() {
             </div>
           </section>
 
+          {/* ============================= */}
           {/* MENSAJES DEL SISTEMA         */}
+          {/* ============================= */}
 
           {mensajeError && (
             <p className="mochila-alerta mochila-error" role="alert">
@@ -631,7 +592,10 @@ export default function Mochila() {
         </>
       )}
 
+      {/* ============================= */}
       {/* 4. RESULTADO DEL ALGORITMO   */}
+      {/* ============================= */}
+
       {resultadoBackend && (
         <>
           <div
@@ -751,7 +715,9 @@ export default function Mochila() {
                   </div>
                 </div>
 
+                {/* ============================= */}
                 {/* ÚNICA TABLA DE RESULTADOS     */}
+                {/* ============================= */}
 
                 <div className="mochila-bloque">
                   <div className="mochila-tabla-encabezado">
@@ -782,11 +748,13 @@ export default function Mochila() {
                             <tr>
                               <th>Cap.</th>
 
-                              {resultadoBackend.tablas.V[0]?.map((_, indice) =>
-                                indice === 0 ? null : (
+                              {resultadoBackend.tablas.V[0]?.map(
+                                (_, indice) => (
                                   <th key={indice}>
-                                    {listaEquipos[indice - 1]?.nombre ??
-                                      `Objeto ${indice}`}
+                                    {indice === 0
+                                      ? "Sin objetos"
+                                      : (listaEquipos[indice - 1]?.nombre ??
+                                        `Objeto ${indice}`)}
                                   </th>
                                 ),
                               )}
@@ -799,43 +767,41 @@ export default function Mochila() {
                                 <tr key={capacidadFila}>
                                   <th>{capacidadFila}</th>
 
-                                  {fila.map((dato, indice) =>
-                                    indice === 0 ? null : (
-                                      <td
-                                        key={indice}
-                                        className={
-                                          resultadoBackend.tablas.marca[
-                                            capacidadFila
-                                          ]?.[indice] === "verde"
-                                            ? "celda-verde"
-                                            : resultadoBackend.tablas.marca[
-                                                  capacidadFila
-                                                ]?.[indice] === "rojo"
-                                              ? "celda-roja"
-                                              : ""
-                                        }
-                                        title={`
+                                  {fila.map((dato, indice) => (
+                                    <td
+                                      key={indice}
+                                      className={
+                                        resultadoBackend.tablas.marca[
+                                          capacidadFila
+                                        ]?.[indice] === "verde"
+                                          ? "celda-verde"
+                                          : resultadoBackend.tablas.marca[
+                                                capacidadFila
+                                              ]?.[indice] === "rojo"
+                                            ? "celda-roja"
+                                            : ""
+                                      }
+                                      title={`
 Valor: ${textoCelda(dato)}
 
 Copias elegidas: ${textoCelda(
-                                          resultadoBackend.tablas.decision[
-                                            capacidadFila
-                                          ]?.[indice],
-                                        )}
+                                        resultadoBackend.tablas.decision[
+                                          capacidadFila
+                                        ]?.[indice],
+                                      )}
 
 Opciones: ${textoCelda(
-                                          resultadoBackend.tablas.opciones[
-                                            capacidadFila
-                                          ]?.[indice],
-                                        )}
+                                        resultadoBackend.tablas.opciones[
+                                          capacidadFila
+                                        ]?.[indice],
+                                      )}
 
 Marca: ${textoCelda(resultadoBackend.tablas.marca[capacidadFila]?.[indice])}
 `}
-                                      >
-                                        {textoCelda(dato)}
-                                      </td>
-                                    ),
-                                  )}
+                                    >
+                                      {textoCelda(dato)}
+                                    </td>
+                                  ))}
                                 </tr>
                               ),
                             )}
@@ -847,7 +813,10 @@ Marca: ${textoCelda(resultadoBackend.tablas.marca[capacidadFila]?.[indice])}
                 </div>
               </>
             ) : (
-              <p></p>
+              <p>
+                Al presionar Calcular, aquí aparecerán la solución óptima y la
+                tabla de programación dinámica.
+              </p>
             )}
           </section>
         </>

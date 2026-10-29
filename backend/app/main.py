@@ -5,9 +5,9 @@ from app.api.health import router as health_router
 from app.algoritmos.series_deportivas.router import router as series_router
 from app.algoritmos.reemplazo_equipos.router import router as replacement_router
 from app.algoritmos.problema_mochila.router import router as mochila_router
-from app.algoritmos.abb_optimo.router import router as abb_optimo_router
-from app.core.config import get_cors_origins
 
+from app.algoritmos.Mult_matrices.router import router as matrices_router
+from app.core.config import get_cors_origins
 
 def create_app() -> FastAPI:
     app = FastAPI(title="IO WEB API")
@@ -22,7 +22,8 @@ def create_app() -> FastAPI:
     app.include_router(series_router)
     app.include_router(replacement_router)
     app.include_router(mochila_router)
-    app.include_router(abb_optimo_router)
+    app.include_router(matrices_router)
+
     return app
 
 

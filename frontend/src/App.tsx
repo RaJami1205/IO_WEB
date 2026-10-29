@@ -7,8 +7,6 @@ import VentanaBienvenida, {
 import SeriesDeportivas from "./componentes/SeriesDeportivas";
 import RemplazoEquipos from "./componentes/RemplazoEquipos";
 import Mochila from "./componentes/Mochila";
-import ArbolOptimo from "./componentes/ArbolOptimo";
-import MultiplicacionMatrices from "./componentes/MultiplicacionMatrices";
 function App() {
   return (
     <PlantillaGeneral>
@@ -20,11 +18,6 @@ function App() {
         <Route path="/remplazo-equipos" element={<RemplazoEquipos />} />
 
         <Route path="/Mochila" element={<Mochila />} />
-        <Route path="/ArbolOptimo" element={<ArbolOptimo />} />
-        <Route
-          path="/multiplicacion-matrices"
-          element={<MultiplicacionMatrices />}
-        />
       </Routes>
     </PlantillaGeneral>
   );

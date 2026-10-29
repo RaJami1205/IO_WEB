@@ -15,19 +15,13 @@ describe("Series Deportivas: validación de entrada", () => {
   });
 
   it("rechaza juegos pares y más de once juegos", () => {
-    expect(() => validarConfiguracion({ ...datos, juegos: 4 })).toThrow(
-      /impar/i,
-    );
-    expect(() => validarConfiguracion({ ...datos, juegos: 13 })).toThrow(
-      /entre 1 y 11/i,
-    );
+    expect(() => validarConfiguracion({ ...datos, juegos: 4 })).toThrow(/impar/i);
+    expect(() => validarConfiguracion({ ...datos, juegos: 13 })).toThrow(/entre 1 y 11/i);
   });
 
   it("rechaza probabilidades inválidas y localías incompletas", () => {
     expect(() => validarConfiguracion({ ...datos, ph: 1.2 })).toThrow(/ph/i);
     expect(() => validarConfiguracion({ ...datos, pr: -0.1 })).toThrow(/pr/i);
-    expect(() =>
-      validarConfiguracion({ ...datos, formato: [true, false] }),
-    ).toThrow(/formato/i);
+    expect(() => validarConfiguracion({ ...datos, formato: [true, false] })).toThrow(/formato/i);
   });
 });
