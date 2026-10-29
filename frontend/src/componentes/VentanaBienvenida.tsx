@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 const modulos = [
   {
@@ -24,7 +25,7 @@ const modulos = [
     nombreCorto: "Árbol óptimo",
     descripcion:
       "Encuentra la estructura de un árbol de búsqueda que minimiza su costo esperado.",
-    ruta: null,
+    ruta: "/ArbolOptimo",
   },
   {
     numero: "04",
@@ -32,7 +33,7 @@ const modulos = [
     nombreCorto: "Matrices",
     descripcion:
       "Encuentra el orden de multiplicación que requiere menos operaciones.",
-    ruta: null,
+    ruta: "/multiplicacion-matrices",
   },
   {
     numero: "05",
@@ -48,8 +49,80 @@ type PlantillaGeneralProps = {
   children: ReactNode;
 };
 
+type EstadoBackend = "consultando" | "activo" | "inactivo";
+
+type VerificacionBackend = {
+  ruta: string;
+  estado: EstadoBackend;
+};
+
 // Encabezado y pie compartidos por todas las páginas.
 export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
+  const ubicacion = useLocation();
+
+  const [verificacion, setVerificacion] = useState<VerificacionBackend>({
+    ruta: ubicacion.pathname,
+    estado: "consultando",
+  });
+
+  const estadoBackend: EstadoBackend =
+    verificacion.ruta === ubicacion.pathname
+      ? verificacion.estado
+      : "consultando";
+
+  // Verifica el estado del backend al iniciar y al cambiar de pantalla.
+  useEffect(() => {
+    const ruta = ubicacion.pathname;
+    const controller = new AbortController();
+    let montado = true;
+
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const verificarBackend = async () => {
+      try {
+        const respuesta = await fetch("/api/health", {
+          signal: controller.signal,
+        });
+
+        if (!respuesta.ok) {
+          throw new Error("Servicio no disponible");
+        }
+
+        const datos: unknown = await respuesta.json();
+
+        const activo =
+          typeof datos === "object" &&
+          datos !== null &&
+          "status" in datos &&
+          datos.status === "ok";
+
+        if (montado) {
+          setVerificacion({
+            ruta,
+            estado: activo ? "activo" : "inactivo",
+          });
+        }
+      } catch {
+        if (montado) {
+          setVerificacion({
+            ruta,
+            estado: "inactivo",
+          });
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
+
+    void verificarBackend();
+
+    return () => {
+      montado = false;
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [ubicacion.pathname]);
+
   return (
     <div className="io-shell">
       <header className="io-header">
@@ -60,6 +133,21 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
               <small>IO WEB</small>
             </span>
           </Link>
+
+          <div role="status" aria-live="polite">
+            {estadoBackend === "consultando" && (
+              <p>🟡 Verificando conexión...</p>
+            )}
+
+            {estadoBackend === "activo" && <p>🟢 Servidor activo</p>}
+
+            {estadoBackend === "inactivo" && (
+              <p>
+                🔴 Servidor desconectado. No se pudo establecer conexión con el
+                servicio.
+              </p>
+            )}
+          </div>
 
           <nav className="io-nav" aria-label="Navegación principal">
             <NavLink
@@ -95,7 +183,6 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
                   </span>
                 )}
 
-                {/* Tooltip al pasar el cursor */}
                 <div
                   className="io-tooltip"
                   id={`tooltip-${modulo.numero}`}
@@ -110,7 +197,9 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
                   <p>{modulo.descripcion}</p>
 
                   {!modulo.ruta && (
-                    <small className="io-tooltip-status">En preparación</small>
+                    <small className="io-tooltip-status">
+                      No está disponible ahora
+                    </small>
                   )}
                 </div>
               </div>

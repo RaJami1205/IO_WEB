@@ -1,0 +1,17 @@
+{
+  "algoritmo": "mochila",
+  "variante": "0-1",
+  "capacidad": 12,
+  "objetos": [
+    {
+      "nombre": "Tienda de campaña",
+      "peso": 3,
+      "valor": 42
+    },
+    {
+      "nombre": "Tienda de campaña",
+      "peso": 3,
+      "valor": 42
+    }
+  ]
+}
