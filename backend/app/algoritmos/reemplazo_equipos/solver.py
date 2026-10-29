@@ -1,9 +1,12 @@
+# Minimiza el costo futuro de reemplazo desde el final del horizonte hacia el inicio.
+# Conserva todos los cortes empatados y obtiene páginas de planes mediante sus conteos.
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
 from typing import Any
 
 
+# Reúne costos, decisiones, conteos, planes paginados y eventos de cálculo.
 @dataclass
 class Solution:
     costos: list[Fraction]
@@ -19,6 +22,7 @@ def page_plans(siguientes: list[list[int]], counts: list[int], offset: int, limi
     plans: list[list[int]] = []
     terminal = len(siguientes) - 1
 
+    # Recorre decisiones óptimas saltando las ramas anteriores a la página solicitada.
     def visit(path: list[int], skip: int) -> None:
         if len(plans) >= limit:
             return
@@ -40,6 +44,7 @@ def page_plans(siguientes: list[list[int]], counts: list[int], offset: int, limi
     return plans
 
 
+# Calcula costos por duración, G(t), decisiones empatadas y la página de planes óptimos.
 def solve(initial: int | float | Decimal, horizon: int,
           periods: list[tuple[int | float | Decimal, int | float | Decimal]],
           offset: int = 0, limit: int = 100) -> Solution:
@@ -55,6 +60,7 @@ def solve(initial: int | float | Decimal, horizon: int,
     counts[horizon] = 1
     events: list[dict[str, Any]] = []
 
+    # Añade un evento ordenado con los cambios de tabla y detalles de la evaluación.
     def event(kind, explanation, focus=None, changes=None, data=None):
         item = {"orden": len(events) + 1, "tipo": kind, "explicacion": explanation,
                 "foco": focus, "cambios": [] if changes is None else changes}

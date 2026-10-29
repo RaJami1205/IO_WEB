@@ -1,3 +1,4 @@
+# Crea la API de IO WEB y registra CORS, salud y los cinco algoritmos.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,6 +11,7 @@ from app.algoritmos.Mult_matrices.router import router as matrices_router
 from app.core.config import get_cors_origins
 
 
+# Construye una aplicación con los orígenes autorizados y sus routers.
 def create_app() -> FastAPI:
     app = FastAPI(title="IO WEB API")
     app.add_middleware(

@@ -1,3 +1,4 @@
+# Ordena las llaves, invoca el solver y serializa costos, probabilidades y tablas del ABB.
 import math
 from fractions import Fraction
 
@@ -5,6 +6,7 @@ from app.algoritmos.abb_optimo.schemas import AbbRequest, AbbResponse, clave_alf
 from app.algoritmos.abb_optimo.solver import solve
 
 
+# Convierte recursivamente fracciones a enteros o flotantes representables en JSON.
 def json_numbers(value):
     if isinstance(value, Fraction):
         if value.denominator == 1:
@@ -24,10 +26,12 @@ def json_numbers(value):
     return value
 
 
+# Ordena las llaves con la misma normalización usada para detectar duplicados.
 def ordenar_llaves(request: AbbRequest) -> list:
     return sorted(request.llaves, key=lambda item: clave_alfabetica(item.llave))
 
 
+# Asocia cada llave ordenada con su peso y sus probabilidades exacta y redondeada.
 def describir_llaves(nombres: list[str], pesos: list[Fraction], probabilidades: list[Fraction | None]) -> list[dict]:
     total = sum(pesos)
     descripcion = []
@@ -42,6 +46,7 @@ def describir_llaves(nombres: list[str], pesos: list[Fraction], probabilidades: 
     return descripcion
 
 
+# Coordina el cálculo y construye la respuesta sin la fila auxiliar cero.
 def resolver_abb(request: AbbRequest) -> AbbResponse:
     llaves_ordenadas = ordenar_llaves(request)
     nombres = [item.llave for item in llaves_ordenadas]

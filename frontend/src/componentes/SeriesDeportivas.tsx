@@ -1,3 +1,4 @@
+/** Gestiona la serie y sus archivos JSON; consulta FastAPI y revela la tabla recibida. */
 import type { ChangeEvent, FormEvent } from "react";
 import "../estilos/SeriesDeportivas.css";
 import { useState } from "react";
@@ -20,6 +21,7 @@ const configuracionInicial: ConfiguracionSerie = {
   formato: [true],
 };
 
+/** Valida cantidad de juegos, probabilidades y una localía por partido. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function validarConfiguracion(
   datosRecibidos: unknown,
@@ -90,7 +92,7 @@ export function validarConfiguracion(
     formato: datos.formato as boolean[],
   };
 }
-//modficacion de formulario
+/** Presenta el formulario de la serie y anima las probabilidades calculadas por el backend. */
 function SeriesDeportivas() {
   // Datos editables del formulario.
   const [cantidadDeJuegos, cambiarCantidadDeJuegos] = useState(
@@ -116,6 +118,7 @@ function SeriesDeportivas() {
     number[][] | null
   >(null);
 
+  /** Borra los mensajes y la tabla de la consulta anterior. */
   function limpiarMensajes() {
     cambiarMensajeError("");
     cambiarMensajeExito("");
@@ -236,6 +239,7 @@ function SeriesDeportivas() {
       );
     }
   }
+  /** Comprueba la conexión, solicita las probabilidades y revela sus celdas por filas. */
   async function calcularSerie(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
 

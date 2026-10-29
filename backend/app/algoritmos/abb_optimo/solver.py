@@ -1,8 +1,11 @@
+# Calcula costos y raíces del ABB óptimo por intervalos crecientes.
+# Usa probabilidades normalizadas y redondeadas a dos decimales antes de optimizar.
 import math
 from dataclasses import dataclass
 from fractions import Fraction
 
 
+# Reúne las tablas A y R y las probabilidades usadas en la recurrencia.
 @dataclass
 class Solution:
     tabla_a: list[list[Fraction | None]]
@@ -10,8 +13,8 @@ class Solution:
     probabilidades: list[Fraction | None]
 
 
+# Prepara A y R e inicializa en cero los costos de intervalos vacíos.
 def crear_tablas(cantidad_llaves: int) -> tuple[list[list[Fraction | None]], list[list[int | None]]]:
-    #crea A y R con la diagonal de ceros
 
     cantidad_filas = cantidad_llaves + 2
     cantidad_columnas = cantidad_llaves + 1
@@ -28,8 +31,8 @@ def crear_tablas(cantidad_llaves: int) -> tuple[list[list[Fraction | None]], lis
     return tabla_a, tabla_r
 
 
+# Normaliza un peso y redondea su probabilidad a centésimas con mitades hacia arriba.
 def redondear_probabilidad(peso: Fraction, total: Fraction) -> Fraction:
-    #devuelve peso / total redondeado a dos decimales 
 
     probabilidad = peso / total
     centesimas = probabilidad * 100
@@ -37,6 +40,7 @@ def redondear_probabilidad(peso: Fraction, total: Fraction) -> Fraction:
     return Fraction(centesimas_redondeadas, 100)
 
 
+# Inicializa el costo y la raíz de los subárboles de una sola llave.
 def llenar_diagonal(tabla_a: list[list[Fraction | None]], tabla_r: list[list[int | None]],
                     probabilidades: list[Fraction | None], cantidad_llaves: int) -> None:
     for llave in range(1, cantidad_llaves + 1):
@@ -52,9 +56,9 @@ def suma_probabilidades(probabilidades: list[Fraction | None], inicio: int, fin:
     return total
 
 
+# Evalúa cada raíz del intervalo y conserva la de menor costo esperado.
 def evaluar_casilla(tabla_a: list[list[Fraction | None]], probabilidades: list[Fraction | None],
                     inicio: int, fin: int) -> tuple[Fraction, int, list[tuple[int, Fraction]]]:
-    #prueba cada raiz de inicio a fin y elige la de menor costo
 
     peso_subarbol = suma_probabilidades(probabilidades, inicio, fin)
     candidatos = []
@@ -91,8 +95,8 @@ def llenar_tablas(tabla_a: list[list[Fraction | None]], tabla_r: list[list[int |
             tabla_r[inicio][fin] = mejor_raiz
 
 
+# Calcula A y R a partir de pesos asociados a llaves previamente ordenadas.
 def solve(pesos: list[Fraction]) -> Solution:
-    #resuelve el arbol optimo a partir de los pesos ya ordenados alfabeticamente
     cantidad_llaves = len(pesos)
     total = sum(pesos)
 

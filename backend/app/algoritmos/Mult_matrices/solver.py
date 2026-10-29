@@ -1,4 +1,4 @@
-
+# Minimiza multiplicaciones escalares por intervalos y reconstruye una parentización óptima.
 # Alias de tipo: una tabla n x n cuyas celdas pueden estar vacías (None)
 # mientras no hayan sido calculadas.
 Tabla = list[list[int | None]]
@@ -8,13 +8,13 @@ def crear_tabla_vacia(n: int) -> Tabla:
 
     return [[None for _ in range(n)] for _ in range(n)]
 
-#Coloca ceros en la diagonal principal de M.
+# Inicializa en cero el costo de cada matriz individual.
 def inicializar_diagonal(M: Tabla, n: int) -> None:
 
     for i in range(n):
         M[i][i] = 0
 
-#Calcula el costo de multiplicar una cadena utilizando un corte específico.
+# Suma los costos de ambos subintervalos y la multiplicación que los une.
 def calcular_costo_corte(
     M: Tabla,
     dimensiones: list[int],
@@ -39,7 +39,7 @@ def calcular_costo_corte(
 
     return costo_izquierdo + costo_derecho + costo_unir
 
-	#Prueba todos los cortes posibles y selecciona el de menor costo.
+# Evalúa todos los cortes y registra el menor óptimo con numeración desde uno.
 def buscar_mejor_corte(
     M: Tabla,
     dimensiones: list[int],
@@ -63,7 +63,7 @@ def buscar_mejor_corte(
     return mejor_costo, mejor_corte
 
 
-#	Resuelve los subproblemas y llena las tablas M y P.
+# Llena costos M y cortes P por longitud creciente para disponer de los subproblemas.
 def llenar_tablas(
     M: Tabla,
     P: Tabla,
@@ -85,7 +85,7 @@ def llenar_tablas(
 
 
 
-#Reconstruye recursivamente el orden óptimo de multiplicación.
+# Reconstruye la parentización a partir de los cortes almacenados en P.
 def construir_parentizacion(P: Tabla, i: int, j: int) -> str:
 
     if i == j:
@@ -101,7 +101,7 @@ def construir_parentizacion(P: Tabla, i: int, j: int) -> str:
 
 
 
-# Punto de entrada
+# Devuelve las tablas, el costo mínimo y una parentización de la cadena completa.
 
 
 def solve(dimensiones: list[int]):

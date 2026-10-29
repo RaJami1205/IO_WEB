@@ -1,3 +1,4 @@
+/** Gestiona llaves y archivos JSON; presenta las probabilidades y tablas A y R de FastAPI. */
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import "../estilos/ArbolOptimo.css";
@@ -7,16 +8,19 @@ type LlaveABB = {
   peso: number;
 };
 
+/** Conserva las llaves en el orden ingresado para enviarlas y exportarlas. */
 type ConfiguracionABB = {
   algoritmo: "abb-optimo";
   llaves: LlaveABB[];
 };
 
+/** Mantiene el peso como texto mientras se edita en el formulario. */
 type LlaveFormulario = {
   llave: string;
   peso: string;
 };
 
+/** Asocia cada llave ordenada por el backend con sus probabilidades informadas. */
 type LlaveOrdenadaABB = {
   posicion: number;
   llave: string;
@@ -32,6 +36,7 @@ type ResultadoABB = {
   conclusion: string;
 };
 
+/** Contiene las tablas de costos y raíces junto al resumen y sus convenciones de índices. */
 type RespuestaABB = {
   A: (number | null)[][];
   R: (number | null)[][];
@@ -45,7 +50,7 @@ function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
 
-// Normaliza el nombre de una llave eliminando espacios, mayúsculas y acentos.
+/** Normaliza espacios externos, mayúsculas y acentos para detectar duplicados, conservando ñ. */
 function normalizarLlave(llave: string): string {
   return llave
     .trim()
@@ -210,13 +215,14 @@ function textoCelda(valor: unknown): string {
   return String(valor);
 }
 
+/** Cuenta las celdas aplicables que debe revelar la animación, excluyendo null. */
 function cantidadCeldas(matriz: (number | null)[][]): number {
   return matriz.reduce(
     (total, fila) => total + fila.filter((celda) => celda !== null).length,
     0,
   );
 }
-//anima la tabla de respuesta
+/** Revela las celdas aplicables de A o R con los índices de fila y columna del backend. */
 function TablaAnimada({
   nombre,
   explicacion,
@@ -286,6 +292,7 @@ function TablaAnimada({
   );
 }
 
+/** Coordina el formulario de llaves, la consulta a la API y la presentación del ABB óptimo. */
 export default function ArbolOptimo() {
   const [listaLlaves, cambiarListaLlaves] = useState<LlaveFormulario[]>([]);
   const [nuevaLlave, cambiarNuevaLlave] = useState("");
@@ -297,13 +304,14 @@ export default function ArbolOptimo() {
     useState<RespuestaABB | null>(null);
   const [celdasVisibles, cambiarCeldasVisibles] = useState(0);
 
+  /** Borra la respuesta, el avance de la animación y los mensajes anteriores. */
   function limpiarResultados() {
     cambiarRespuestaBackend(null);
     cambiarCeldasVisibles(0);
     cambiarMensajeError("");
     cambiarMensajeExito("");
   }
-  //obtiene la cofguracion actual enntre los parametros
+  /** Valida las llaves agregadas y exige resolver cualquier entrada aún pendiente. */
   function obtenerConfiguracionActual(): ConfiguracionABB {
     if (nuevaLlave.trim() !== "" || nuevoPeso.trim() !== "") {
       throw new Error(
@@ -321,7 +329,7 @@ export default function ArbolOptimo() {
       })),
     });
   }
-  //agrega nueva llave
+  /** Valida y agrega una llave con peso, comprobando duplicados y el límite de cantidad. */
   function agregarLlave(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     limpiarResultados();
@@ -357,11 +365,12 @@ export default function ArbolOptimo() {
       );
     }
   }
+  /** Elimina una llave y descarta los resultados calculados previamente. */
   function eliminarLlave(indice: number) {
     limpiarResultados();
     cambiarListaLlaves((actuales) => actuales.filter((_, i) => i !== indice));
   }
-  //lee un JSON y lo valida suministrado por el usuario
+  /** Valida el JSON y carga sus llaves respetando el orden del archivo. */
   async function cargarArchivoJson(evento: ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     if (!archivo) return;
@@ -392,7 +401,7 @@ export default function ArbolOptimo() {
       evento.target.value = "";
     }
   }
-  //recopila el contenido actual para crearlo en json
+  /** Descarga la configuración validada en el orden de ingreso. */
   function guardarConfiguracionJson() {
     limpiarResultados();
     try {
@@ -414,7 +423,7 @@ export default function ArbolOptimo() {
       );
     }
   }
-  //valida que el backend este activo toma los paramentros  los envia a calcular
+  /** Comprueba la conexión y solicita al backend el costo, la raíz y las tablas del ABB. */
   async function calcularArbol() {
     if (calculando) return;
 
@@ -502,6 +511,7 @@ export default function ArbolOptimo() {
     }
   }
 
+  /** Revela las celdas aplicables de A y R y libera el temporizador al cambiar la respuesta. */
   useEffect(() => {
     if (!respuestaBackend) return;
 

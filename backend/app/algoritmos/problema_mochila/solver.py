@@ -1,7 +1,10 @@
+# Maximiza el valor de la mochila por capacidad y objeto, con aritmética exacta.
+# Los topes de copias permiten resolver las tres variantes con la misma recurrencia.
 from dataclasses import dataclass, field
 from fractions import Fraction
 
 
+# Conserva valores, decisiones, empates y las copias reconstruidas de la solución.
 @dataclass
 class Solution:
     tabla_valores: list[list[Fraction]]
@@ -12,8 +15,8 @@ class Solution:
     hay_empates: bool = False
 
 
+# Limita las copias por la capacidad disponible y el tope de la variante.
 def copias_maximas(capacidad: int, peso: int, tope: int | None) -> int:
-    #cuantas copias del objeto se pueden probar con esta capacidad segun la variante
     copias_que_caben = capacidad // peso
     if tope is None:
         return copias_que_caben
@@ -54,8 +57,8 @@ def evaluar_celda(solucion: Solution, capacidad: int, objeto: int, peso: int,
         solucion.tabla_marcas[capacidad][objeto] = "rojo"
 
 
+# Recorre las decisiones desde V(C,n) para recuperar copias y detectar empates del plan.
 def reconstruir(solucion: Solution, capacidad_total: int, pesos: list[int]) -> None:
-    #recorre la tabla desde V(C, n) hacia atras y obtiene las copias de cada objeto
     cantidad_objetos = len(pesos)
     solucion.copias_elegidas = [0] * cantidad_objetos
     capacidad = capacidad_total
@@ -71,9 +74,9 @@ def reconstruir(solucion: Solution, capacidad_total: int, pesos: list[int]) -> N
         capacidad = capacidad - copias * pesos[objeto - 1]
 
 
+# Llena las tablas por objeto y reconstruye una selección de valor máximo.
 def solve(capacidad_total: int, pesos: list[int], valores: list[Fraction],
           topes: list[int | None]) -> Solution:
-    #llena la tabla columna por columna y reconstruye la solucion
     cantidad_filas = capacidad_total + 1
     cantidad_columnas = len(pesos) + 1
 

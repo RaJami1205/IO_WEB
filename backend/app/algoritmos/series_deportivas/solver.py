@@ -1,23 +1,29 @@
+# Calcula por programación dinámica la probabilidad de que A gane la serie.
+# F(i,j) usa victorias restantes y sus eventos permiten reproducir la tabla final.
 from dataclasses import dataclass
 from typing import Literal, NotRequired, TypedDict
 
 
+# Identifica una celda de F en los eventos de cálculo.
 class Cell(TypedDict):
     tabla: Literal["F"]
     fila: int
     columna: int
 
 
+# Asocia una celda con la probabilidad que debe mostrarse en ese paso.
 class Change(Cell):
     valor: float
 
 
+# Describe una probabilidad ya calculada que interviene en la recurrencia.
 class Dependency(TypedDict):
     fila: int
     columna: int
     valor: float
 
 
+# Explica el juego y las alternativas de victoria utilizadas para un estado.
 class Evaluation(TypedDict):
     juego: int
     localA: bool
@@ -28,6 +34,7 @@ class Evaluation(TypedDict):
     valorCalculado: float
 
 
+# Agrupa el foco, los cambios y la explicación de un paso de cálculo.
 class Event(TypedDict):
     orden: int
     tipo: Literal["inicializacion", "evaluacion", "actualizacion", "resultado"]
@@ -37,6 +44,7 @@ class Event(TypedDict):
     datos: NotRequired[Evaluation]
 
 
+# Reúne la tabla de probabilidades, la meta de victorias y los eventos generados.
 @dataclass
 class Solution:
     victorias_necesarias: int

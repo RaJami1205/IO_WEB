@@ -1,4 +1,4 @@
-
+# Define la cadena de dimensiones y la respuesta con costo, parentización y tablas.
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -10,6 +10,7 @@ Dimension = Annotated[int, Field(ge=1)]
 Tabla = list[list[int | None]]
 
 
+# Aplica validación estricta y rechaza campos ajenos al contrato.
 class Contract(BaseModel):
 
 
@@ -20,6 +21,7 @@ class Contract(BaseModel):
 # Entrada
 # ---------------------------------------------------------------------------
 
+# Recibe n+1 dimensiones positivas que representan una cadena compatible de n matrices.
 class MatricesRequest(Contract):
 
     algoritmo: Literal["multiplicacion-matrices"]
@@ -30,6 +32,7 @@ class MatricesRequest(Contract):
 # Salida
 # ---------------------------------------------------------------------------
 
+# Resume el costo escalar mínimo y una parentización óptima.
 class ResultadoMatrices(Contract):
 
 
@@ -38,6 +41,7 @@ class ResultadoMatrices(Contract):
     conclusion: str
 
 
+# Contiene los costos M y cortes P; None representa posiciones no utilizadas.
 class TablasMatrices(Contract):
 
 
@@ -45,6 +49,7 @@ class TablasMatrices(Contract):
     P: Tabla
 
 
+# Agrupa el resultado y las tablas enviados al frontend.
 class MatricesResponse(Contract):
 
 

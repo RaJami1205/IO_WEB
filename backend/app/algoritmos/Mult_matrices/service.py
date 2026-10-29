@@ -1,4 +1,4 @@
-
+# Coordina el solver de matrices y construye el resultado y las tablas de la API.
 from app.algoritmos.Mult_matrices.schemas import (
     MatricesRequest,
     MatricesResponse,
@@ -8,6 +8,7 @@ from app.algoritmos.Mult_matrices.schemas import (
 from app.algoritmos.Mult_matrices.solver import solve
 
 
+# Redacta el resumen del costo escalar mínimo para la cadena completa.
 def construir_conclusion(cantidad_matrices: int, costo_minimo: int) -> str:
 
 
@@ -17,6 +18,7 @@ def construir_conclusion(cantidad_matrices: int, costo_minimo: int) -> str:
     )
 
 
+# Agrupa costo, parentización y conclusión en el modelo de resultado.
 def construir_resultado(
     costo_minimo: int,
     parentizacion: str,
@@ -29,6 +31,7 @@ def construir_resultado(
     )
 
 
+# Resuelve las dimensiones validadas y devuelve las tablas M y P junto al óptimo.
 def resolver_matrices(solicitud: MatricesRequest) -> MatricesResponse:
 
 
