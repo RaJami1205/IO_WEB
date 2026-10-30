@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { comprobarSalud } from "../services/health";
 
 const modulos = [
   {
@@ -55,76 +56,33 @@ type EstadoBackend = "consultando" | "activo" | "inactivo";
 /** Vincula cada comprobación de disponibilidad con la ruta que la originó. */
 type VerificacionBackend = {
   ruta: string;
+  intento: number;
   estado: EstadoBackend;
 };
 
 /** Envuelve las vistas con navegación, indicador de conexión y pie compartidos. */
 export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
   const ubicacion = useLocation();
+  const [intento, setIntento] = useState(0);
 
   const [verificacion, setVerificacion] = useState<VerificacionBackend>({
     ruta: ubicacion.pathname,
+    intento,
     estado: "consultando",
   });
 
   const estadoBackend: EstadoBackend =
-    verificacion.ruta === ubicacion.pathname
+    verificacion.ruta === ubicacion.pathname && verificacion.intento === intento
       ? verificacion.estado
       : "consultando";
 
-  // Verifica el estado del backend al iniciar y al cambiar de pantalla.
+  // Cada ruta o reintento cancela la comprobación anterior, también en StrictMode.
   useEffect(() => {
     const ruta = ubicacion.pathname;
-    const controller = new AbortController();
-    let montado = true;
-
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    /** Consulta health y actualiza el estado mientras la vista siga montada. */
-    const verificarBackend = async () => {
-      try {
-        const respuesta = await fetch("/api/health", {
-          signal: controller.signal,
-        });
-
-        if (!respuesta.ok) {
-          throw new Error("Servicio no disponible");
-        }
-
-        const datos: unknown = await respuesta.json();
-
-        const activo =
-          typeof datos === "object" &&
-          datos !== null &&
-          "status" in datos &&
-          datos.status === "ok";
-
-        if (montado) {
-          setVerificacion({
-            ruta,
-            estado: activo ? "activo" : "inactivo",
-          });
-        }
-      } catch {
-        if (montado) {
-          setVerificacion({
-            ruta,
-            estado: "inactivo",
-          });
-        }
-      } finally {
-        clearTimeout(timeout);
-      }
-    };
-
-    void verificarBackend();
-
-    return () => {
-      montado = false;
-      clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [ubicacion.pathname]);
+    return comprobarSalud((disponible) => {
+      setVerificacion({ ruta, intento, estado: disponible ? "activo" : "inactivo" });
+    });
+  }, [ubicacion.pathname, intento]);
 
   return (
     <div className="io-shell">
@@ -139,16 +97,18 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
 
           <div role="status" aria-live="polite">
             {estadoBackend === "consultando" && (
-              <p>🟡 Verificando conexión...</p>
+              <p>🟡 Iniciando conexión…</p>
             )}
 
-            {estadoBackend === "activo" && <p>🟢 Servidor activo</p>}
+            {estadoBackend === "activo" && <p>🟢 Servidor disponible</p>}
 
             {estadoBackend === "inactivo" && (
-              <p>
-                🔴 Servidor desconectado. No se pudo establecer conexión con el
-                servicio.
-              </p>
+              <>
+                <p>🔴 Servidor no disponible</p>
+                <button type="button" onClick={() => setIntento((valor) => valor + 1)}>
+                  Reintentar conexión
+                </button>
+              </>
             )}
           </div>
 
