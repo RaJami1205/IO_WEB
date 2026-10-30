@@ -105,7 +105,9 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 .pagina-abb-optimo .etiqueta-archivo-abb:hover,
@@ -568,4 +570,39 @@
   .abb-celda-visible {
     animation: none;
   }
+}
+.acciones-archivo-abb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.etiqueta-archivo-abb,
+.boton-secundario-abb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: white;
+  color: #111827;
+  font: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.etiqueta-archivo-abb:hover,
+.boton-secundario-abb:hover {
+  background-color: #f3f4f6;
+}
+
+#archivo-abb {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
 }

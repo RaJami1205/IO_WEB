@@ -394,20 +394,26 @@ export default function RemplazoEquipos() {
               <div>
                 <h2>1. Datos generales</h2>
               </div>
-              <div className="reemplazo-archivo">
-                <label>
-                  Cargar archivo JSON
-                  <input
-                    type="file"
-                    accept=".json,application/json"
-                    onChange={cargarArchivoJson}
-                  />
+              <div className="acciones-archivo-abb">
+                <label htmlFor="archivo-abb" className="etiqueta-archivo-abb">
+                  Cargar JSON
                 </label>
-                <button type="button" onClick={guardarConfiguracionJson}>
+                <input
+                  id="archivo-abb"
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={cargarArchivoJson}
+                />
+                <button
+                  type="button"
+                  className="boton-secundario-abb"
+                  onClick={guardarConfiguracionJson}
+                >
                   Guardar JSON
                 </button>
               </div>
             </div>
+
             <div className="formulario-equipos">
               <label>
                 Costo inicial
