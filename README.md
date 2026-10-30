@@ -5,16 +5,14 @@
 <p align="center">Una herramienta educativa para explorar <strong>cinco algoritmos de Programación Dinámica</strong>: ingresar problemas, visualizar tablas y comprender soluciones. La técnica reutiliza resultados de subproblemas para calcular probabilidades y encontrar decisiones óptimas.</p>
 <p align="center"><strong>React</strong> permite introducir datos e interactuar con los resultados; <strong>FastAPI</strong> recibe las solicitudes y coordina los cálculos matemáticos realizados en <strong>Python</strong>.</p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&amp;logo=react&amp;logoColor=61DAFB" alt="React">
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&amp;logo=typescript&amp;logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&amp;logo=vite&amp;logoColor=white" alt="Vite">
-</p>
-<p align="center">
-  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&amp;logo=nodedotjs&amp;logoColor=white" alt="Node.js">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&amp;logo=python&amp;logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&amp;logo=fastapi&amp;logoColor=white" alt="FastAPI">
-</p>
+<br>
+
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&amp;logo=react&amp;logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&amp;logo=vite&amp;logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&amp;logo=nodedotjs&amp;logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&amp;logo=fastapi&amp;logoColor=white)
+
+<br>
 
 <p align="center">
   <img src="assets/panel.png" alt="Panel principal de IO WEB con estado del servidor y navegación a los cinco algoritmos" width="100%">
