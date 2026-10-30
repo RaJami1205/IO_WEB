@@ -33,23 +33,27 @@ describe("Problema de la Mochila: carga de archivos JSON", () => {
     render(<Mochila />);
 
     const archivo = crearArchivo(JSON.stringify(datos));
-    const input = screen.getByLabelText(
-      "Cargar configuración JSON",
-    ) as HTMLInputElement;
+
+    const input = screen.getByLabelText(/cargar.*json/i) as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [archivo] } });
 
     expect(await screen.findByText("Configuración cargada.")).toBeTruthy();
+
     expect((screen.getByLabelText("Variante") as HTMLSelectElement).value).toBe(
       "acotada",
     );
+
     expect(
       (screen.getByLabelText("Capacidad de la mochila") as HTMLInputElement)
         .value,
     ).toBe("10");
+
     expect(screen.getByText("3. Objetos agregados (2)")).toBeTruthy();
+
     expect(screen.getByText("Libro")).toBeTruthy();
     expect(screen.getByText("Agua")).toBeTruthy();
+
     expect(
       (
         screen.getByLabelText(
@@ -63,13 +67,13 @@ describe("Problema de la Mochila: carga de archivos JSON", () => {
     render(<Mochila />);
 
     const archivo = crearArchivo("{json-invalido");
-    const input = screen.getByLabelText(
-      "Cargar configuración JSON",
-    ) as HTMLInputElement;
+
+    const input = screen.getByLabelText(/cargar.*json/i) as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [archivo] } });
 
     expect(await screen.findByRole("alert")).toBeTruthy();
+
     expect(screen.getByText("3. Objetos agregados (0)")).toBeTruthy();
   });
 
@@ -77,9 +81,8 @@ describe("Problema de la Mochila: carga de archivos JSON", () => {
     render(<Mochila />);
 
     const archivo = crearArchivo(JSON.stringify({ ...datos, capacidad: 0 }));
-    const input = screen.getByLabelText(
-      "Cargar configuración JSON",
-    ) as HTMLInputElement;
+
+    const input = screen.getByLabelText(/cargar.*json/i) as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [archivo] } });
 
