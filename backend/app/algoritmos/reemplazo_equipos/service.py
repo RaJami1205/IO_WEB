@@ -1,3 +1,4 @@
+# Coordina el solver de reemplazo y serializa costos, trazas y la página de planes óptimos.
 import math
 from fractions import Fraction
 
@@ -24,6 +25,7 @@ def json_numbers(value):
     return value
 
 
+# Construye la respuesta paginada y añade a la traza la conclusión del resultado.
 def solve_replacement(request: ReplacementRequest, offset: int, limit: int) -> ReplacementResponse:
     solution = solve(request.costoInicial, request.plazo,
                      [(p.reventa, p.mantenimiento) for p in request.periodos], offset, limit)

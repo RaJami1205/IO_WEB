@@ -1,12 +1,15 @@
+/** Gestiona las dimensiones y el JSON de matrices; muestra el óptimo y anima las tablas de FastAPI. */
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import "../estilos/MultiplicacionMatrices.css";
 
+/** Representa la cadena mediante n+1 dimensiones compartidas por matrices consecutivas. */
 type ConfiguracionMatrices = {
   algoritmo: "multiplicacion-matrices";
   dimensiones: number[];
 };
 
+/** Reúne las tablas y los campos de resultado que utiliza la vista. */
 type RespuestaMatrices = {
   M: unknown[][];
   P: unknown[][];
@@ -17,10 +20,12 @@ type RespuestaMatrices = {
 
 const MAX_MATRICES = 10;
 
+/** Identifica un objeto JSON excluyendo null y arreglos. */
 function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
 
+/** Valida de una a diez matrices con dimensiones enteras positivas y sin campos adicionales. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function validarConfiguracion(datos: unknown): ConfiguracionMatrices {
   if (!esObjeto(datos)) {
@@ -62,11 +67,12 @@ export function validarConfiguracion(datos: unknown): ConfiguracionMatrices {
   };
 }
 
+/** Comprueba que la tabla recibida sea un arreglo de filas. */
 function esMatriz(valor: unknown): valor is unknown[][] {
   return Array.isArray(valor) && valor.every(Array.isArray);
 }
 
-// El enunciado especifica M y P
+/** Extrae M, P, costo y parentización de las variantes de respuesta reconocidas por la vista. */
 function validarRespuesta(datos: unknown): RespuestaMatrices {
   if (!esObjeto(datos)) {
     throw new Error("El backend debe devolver un objeto JSON.");
@@ -117,7 +123,7 @@ function validarRespuesta(datos: unknown): RespuestaMatrices {
 
   return { M, P, resultado, parentizacion, costoMinimo };
 }
-// toma el texto de la celda para reprensatacion
+/** Convierte valores de celda a texto y representa los ausentes o no finitos con un guion. */
 function textoCelda(valor: unknown): string {
   if (valor === undefined || valor === null) return "—";
   if (typeof valor === "number") {
@@ -127,10 +133,12 @@ function textoCelda(valor: unknown): string {
   return String(valor);
 }
 
+/** Cuenta las posiciones que debe recorrer la animación de la tabla. */
 function cantidadCeldas(matriz: unknown[][]): number {
   return matriz.reduce((total, fila) => total + fila.length, 0);
 }
 
+/** Presenta las celdas recibidas hasta el avance indicado, con etiquetas de índice ajustables. */
 function TablaAnimada({
   nombre,
   explicacion,
@@ -197,6 +205,7 @@ function TablaAnimada({
   );
 }
 
+/** Coordina el formulario, la consulta del óptimo y la revelación de las tablas M y P. */
 export default function MultiplicacionMatrices() {
   const [cantidadMatrices, cambiarCantidadMatrices] = useState(4);
   const [dimensiones, cambiarDimensiones] = useState<string[]>(
@@ -209,13 +218,14 @@ export default function MultiplicacionMatrices() {
     useState<RespuestaMatrices | null>(null);
   const [celdasVisibles, cambiarCeldasVisibles] = useState(0);
 
+  /** Borra mensajes, respuesta y avance de la animación. */
   function limpiarResultados() {
     cambiarMensajeError("");
     cambiarMensajeExito("");
     cambiarRespuestaBackend(null);
     cambiarCeldasVisibles(0);
   }
-  //actualiza la cantidad de matrices actual
+  /** Ajusta la cantidad de matrices y conserva las dimensiones que aún corresponden. */
   function actualizarCantidadMatrices(cantidad: number) {
     if (
       !Number.isInteger(cantidad) ||
@@ -230,14 +240,14 @@ export default function MultiplicacionMatrices() {
       Array.from({ length: cantidad + 1 }, (_, i) => anteriores[i] ?? ""),
     );
   }
-  //actualiza los tamanios de la matriz
+  /** Edita una dimensión de la cadena y descarta el resultado anterior. */
   function actualizarDimension(indice: number, texto: string) {
     limpiarResultados();
     cambiarDimensiones((anteriores) =>
       anteriores.map((valor, i) => (i === indice ? texto : valor)),
     );
   }
-  //obtiene la configuracion actual
+  /** Convierte los campos completos a una cadena de dimensiones validada. */
   function obtenerConfiguracionActual(): ConfiguracionMatrices {
     if (dimensiones.length !== cantidadMatrices + 1) {
       throw new Error("Faltan dimensiones para la cantidad de matrices.");
@@ -250,7 +260,7 @@ export default function MultiplicacionMatrices() {
       dimensiones: dimensiones.map(Number),
     });
   }
-  //carga el json solicitado por el usuario
+  /** Carga las dimensiones de un JSON válido en los campos editables. */
   async function cargarArchivoJson(evento: ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     if (!archivo) return;
@@ -276,6 +286,7 @@ export default function MultiplicacionMatrices() {
     }
   }
 
+  /** Descarga la configuración validada como archivo JSON. */
   function guardarConfiguracionJson() {
     limpiarResultados();
     try {
@@ -297,7 +308,7 @@ export default function MultiplicacionMatrices() {
       );
     }
   }
-  //llama al backend con la configuracion actual para su ejecucion
+  /** Comprueba la conexión y solicita al backend el costo, la parentización y las tablas. */
   async function calcularMatrices() {
     if (calculando) return;
 
@@ -385,6 +396,7 @@ export default function MultiplicacionMatrices() {
     }
   }
 
+  /** Revela las celdas de ambas tablas y cancela el temporizador al cambiar la respuesta. */
   useEffect(() => {
     if (!respuestaBackend) return;
 

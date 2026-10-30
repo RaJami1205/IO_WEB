@@ -1,3 +1,4 @@
+# Atiende POST /api/reemplazo-equipos y solicita al servicio una página de planes.
 import json
 from decimal import Decimal
 from typing import Annotated
@@ -10,6 +11,7 @@ from fastapi.routing import APIRoute
 from app.algoritmos.reemplazo_equipos.schemas import ReplacementRequest, ReplacementResponse
 from app.algoritmos.reemplazo_equipos.service import solve_replacement
 
+# Conserva los importes decimales del cuerpo JSON antes de validarlos.
 class DecimalRequest(Request):
     async def json(self):
         # Conserva todos los dígitos del token JSON antes de validar el modelo.
@@ -19,9 +21,11 @@ class DecimalRequest(Request):
 class ReplacementRoute(APIRoute):
     """Evita que entradas NaN/Infinity rompan la serialización del error 422."""
 
+    # Envuelve el manejador de FastAPI con la lectura decimal y el control de errores.
     def get_route_handler(self):
         handler = super().get_route_handler()
 
+        # Procesa la solicitud y convierte sus errores de validación en HTTP 422.
         async def validated(request: Request):
             try:
                 return await handler(DecimalRequest(request.scope, request.receive))
@@ -37,6 +41,7 @@ class ReplacementRoute(APIRoute):
 router = APIRouter(prefix="/api", tags=["reemplazo-equipos"], route_class=ReplacementRoute)
 
 
+# Delega el cálculo paginado y convierte los errores numéricos previstos en 422.
 @router.post("/reemplazo-equipos", response_model=ReplacementResponse, response_model_exclude_unset=True)
 def reemplazo_equipos(
     request: ReplacementRequest,

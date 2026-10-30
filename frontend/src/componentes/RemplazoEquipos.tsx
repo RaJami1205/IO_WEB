@@ -1,12 +1,15 @@
+/** Gestiona períodos de uso y JSON; presenta costos y planes de reemplazo calculados por FastAPI. */
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import "../estilos/RemplazoEquipos.css";
 
+/** Representa un período editable de reventa y mantenimiento del mismo equipo. */
 type Equipo = {
   valorVenta: number;
   costoMantenimiento: number;
 };
 
+/** Define los datos enviados al endpoint de reemplazo y guardados en JSON. */
 type ConfiguracionRemplazo = {
   algoritmo: "reemplazo-equipos";
   costoInicial: number;
@@ -15,6 +18,7 @@ type ConfiguracionRemplazo = {
   periodos: { reventa: number; mantenimiento: number }[];
 };
 
+/** Describe costos, decisiones y la página de planes recibida del backend. */
 type RespuestaReemplazo = {
   algoritmo?: string;
   resultado: {
@@ -44,9 +48,11 @@ type RespuestaReemplazo = {
   planesIncluyenInicioFin?: boolean;
 };
 
+/** Identifica un objeto JSON excluyendo null y arreglos. */
 function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
+/** Comprueba los datos generales y que exista un período válido por año de vida útil. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function validarConfiguracion(datos: unknown): ConfiguracionRemplazo {
   if (!esObjeto(datos)) {
@@ -94,7 +100,7 @@ export function validarConfiguracion(datos: unknown): ConfiguracionRemplazo {
   }
   return datos as ConfiguracionRemplazo;
 }
-//Valida la respuesta del backend
+/** Comprueba los tipos de los costos, planes y tablas recibidos del backend. */
 function validarRespuesta(datos: unknown): RespuestaReemplazo {
   if (
     !esObjeto(datos) ||
@@ -105,10 +111,13 @@ function validarRespuesta(datos: unknown): RespuestaReemplazo {
   }
   const resultado = datos.resultado;
   const tablas = datos.tablas;
+  /** Acepta únicamente valores numéricos finitos. */
   const numeroValido = (valor: unknown): valor is number =>
     typeof valor === "number" && Number.isFinite(valor);
+  /** Comprueba un vector de costos o instantes numéricos. */
   const arregloNumeros = (valor: unknown): valor is number[] =>
     Array.isArray(valor) && valor.every(numeroValido);
+  /** Comprueba listas de planes o de siguientes instantes. */
   const arregloRutas = (valor: unknown): valor is number[][] =>
     Array.isArray(valor) && valor.every(arregloNumeros);
 
@@ -126,16 +135,19 @@ function validarRespuesta(datos: unknown): RespuestaReemplazo {
   return datos as RespuestaReemplazo;
 }
 
+/** Presenta importes con formato local y hasta seis decimales. */
 function formatearNumero(valor: number): string {
   return new Intl.NumberFormat("es-CR", {
     maximumFractionDigits: 6,
   }).format(valor);
 }
 
+/** Presenta los instantes de un plan en el orden recibido. */
 function formatearRuta(plan: number[]): string {
   return plan.join(" → ");
 }
 
+/** Coordina el formulario y presenta las tablas y los planes devueltos por la API. */
 export default function RemplazoEquipos() {
   const [costoInicial, cambiarCostoInicial] = useState("");
   const [plazo, cambiarPlazo] = useState("");
@@ -149,12 +161,13 @@ export default function RemplazoEquipos() {
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
 
+  /** Descarta mensajes y resultados anteriores al editar la configuración. */
   function limpiarResultados() {
     cambiarMensajeError("");
     cambiarMensajeExito("");
     cambiarResultadoBackend(null);
   }
-  //carga archivos a solicitud de usuario
+  /** Valida un JSON y carga sus períodos e importes en el formulario. */
   async function cargarArchivoJson(evento: ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     if (!archivo) return;
@@ -184,7 +197,7 @@ export default function RemplazoEquipos() {
       evento.target.value = "";
     }
   }
-  //otiene la configuracion actual de los paramentros
+  /** Construye y valida la solicitud con los períodos actualmente ingresados. */
   function obtenerConfiguracionActual(): ConfiguracionRemplazo {
     if (
       costoInicial.trim() === "" ||
@@ -207,7 +220,7 @@ export default function RemplazoEquipos() {
       })),
     });
   }
-  //guarda la configuracion actual en json
+  /** Descarga la configuración validada como archivo JSON. */
   function guardarConfiguracionJson() {
     cambiarMensajeError("");
     cambiarMensajeExito("");
@@ -230,7 +243,7 @@ export default function RemplazoEquipos() {
       );
     }
   }
-  //agrega un equipo a la lista
+  /** Valida y agrega un período de reventa y mantenimiento hasta completar la vida útil. */
   function agregarEquipo(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     limpiarResultados();
@@ -267,12 +280,12 @@ export default function RemplazoEquipos() {
     cambiarValorVenta("");
     cambiarCostoMantenimiento("");
   }
-  //elimina un equipo de la tabla
+  /** Elimina un período de la lista y descarta el resultado anterior. */
   function eliminarEquipo(indice: number) {
     limpiarResultados();
     cambiarListaEquipos((equipos) => equipos.filter((_, i) => i !== indice));
   }
-  //llama al backend con los parametros depsues de validar si esta activo /api/reemplazo-equipos
+  /** Comprueba la conexión y solicita los costos y planes de reemplazo al backend. */
   async function calcularReemplazo() {
     if (calculando) return;
 

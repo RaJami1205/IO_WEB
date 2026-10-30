@@ -1,3 +1,4 @@
+/** Define las rutas del menú y de los cinco algoritmos dentro de la plantilla común. */
 import { Routes, Route } from "react-router-dom";
 
 import VentanaBienvenida, {
@@ -9,6 +10,7 @@ import RemplazoEquipos from "./componentes/RemplazoEquipos";
 import Mochila from "./componentes/Mochila";
 import ArbolOptimo from "./componentes/ArbolOptimo";
 import MultiplicacionMatrices from "./componentes/MultiplicacionMatrices";
+/** Selecciona la vista correspondiente a la ruta actual. */
 function App() {
   return (
     <PlantillaGeneral>

@@ -1,9 +1,10 @@
+/** Gestiona las variantes y objetos de mochila; consulta FastAPI y presenta la selección y tablas. */
 import { useState } from "react";
 import "../estilos/Mochila.css";
 import type { ChangeEvent, FormEvent } from "react";
 
 type Variante = "acotada" | "0-1" | "no-acotada";
-//nombre del objeto
+/** Describe un objeto y su disponibilidad opcional para la variante acotada. */
 type ObjetoMochila = {
   nombre: string;
   peso: number;
@@ -11,6 +12,7 @@ type ObjetoMochila = {
   cantidad?: number;
 };
 
+/** Define la capacidad, variante y objetos que se envían al backend y se guardan en JSON. */
 type ConfiguracionMochila = {
   algoritmo: "mochila";
   variante: Variante;
@@ -18,6 +20,7 @@ type ConfiguracionMochila = {
   objetos: ObjetoMochila[];
 };
 
+/** Agrupa el resumen y las tablas de valores, decisiones, empates y marcas del backend. */
 type RespuestaMochila = {
   resultado: Record<string, unknown>;
   tablas: {
@@ -33,7 +36,7 @@ type RespuestaMochila = {
 function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
-//valida que el json cumpla con el formato dado en el requerimiento
+/** Valida la variante, capacidad y objetos, incluidas las cantidades de la mochila acotada. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function validarConfiguracion(datos: unknown): ConfiguracionMochila {
   if (!esObjeto(datos)) throw new Error("El JSON debe ser un objeto.");
@@ -113,7 +116,7 @@ export function validarConfiguracion(datos: unknown): ConfiguracionMochila {
   return datos as ConfiguracionMochila;
 }
 
-//valida la respuesta del back
+/** Comprueba el resumen y la presencia de las cuatro tablas requeridas por la vista. */
 function validarRespuesta(datos: unknown): RespuestaMochila {
   if (
     !esObjeto(datos) ||
@@ -139,14 +142,14 @@ function validarRespuesta(datos: unknown): RespuestaMochila {
   };
 }
 
-//convierte dato en texto para mostrar
+/** Convierte valores simples o estructurados a texto para las celdas y el resumen. */
 function textoCelda(valor: unknown): string {
   if (valor === null) return "null";
   if (valor === undefined) return "—";
   if (typeof valor === "object") return JSON.stringify(valor);
   return String(valor);
 }
-//funcion mochila incluye todo el calculo y llamadas durante la ejecucion
+/** Coordina la edición de objetos y presenta la solución calculada por el backend. */
 export default function Mochila() {
   const [variante, cambiarVariante] = useState<Variante>("0-1");
   const [capacidad, cambiarCapacidad] = useState("");
@@ -162,13 +165,14 @@ export default function Mochila() {
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
 
+  /** Descarta mensajes y resultados anteriores al editar la configuración. */
   function limpiarResultados() {
     cambiarMensajeError("");
     cambiarMensajeExito("");
     cambiarResultadoBackend(null);
   }
 
-  //metodo que carga el json del usuario y actualiza
+  /** Valida un archivo JSON y carga la variante, capacidad y objetos en el formulario. */
   async function cargarArchivoJson(evento: ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     if (!archivo) return;
@@ -194,7 +198,7 @@ export default function Mochila() {
     evento.target.value = "";
   }
 
-  //obtiene los parametros actuales para enviar al backend a calcular
+  /** Construye la solicitud validada y omite cantidades fuera de la variante acotada. */
   function obtenerConfiguracionActual(): ConfiguracionMochila {
     if (capacidad.trim() === "")
       throw new Error("Ingresa la capacidad de la mochila.");
@@ -212,7 +216,7 @@ export default function Mochila() {
     });
   }
 
-  //descarga el json actual a solicitud del usuario
+  /** Descarga la configuración validada como archivo JSON. */
   function guardarConfiguracionJson() {
     cambiarMensajeError("");
     try {
@@ -236,7 +240,7 @@ export default function Mochila() {
     }
   }
 
-  //valida y obtiene un nuevo objeto para ingreso a la tabla, se exige cantidad solo cuando se requiere
+  /** Valida y agrega un objeto, exigiendo cantidad disponible en la variante acotada. */
   function agregarEquipo(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     limpiarResultados();
@@ -295,13 +299,13 @@ export default function Mochila() {
     cambiarCantidad("");
   }
 
-  //elimina objeto de la tabla de equipos
+  /** Elimina un objeto y descarta los resultados de la configuración anterior. */
   function eliminarEquipo(indice: number) {
     limpiarResultados();
     cambiarListaEquipos((objetos) => objetos.filter((_, i) => i !== indice));
   }
 
-  //solicita el ingreso de cantidad cuando se escoje el cambio de variable
+  /** Actualiza la cantidad disponible de un objeto o la deja pendiente si el campo está vacío. */
   function actualizarCantidadObjeto(indice: number, texto: string) {
     limpiarResultados();
     cambiarListaEquipos((objetos) =>
@@ -315,7 +319,7 @@ export default function Mochila() {
     );
   }
 
-  //envia toda la informacion al backen con fastapi
+  /** Comprueba la conexión y solicita al backend la selección y las tablas de mochila. */
   async function calcularMochila() {
     if (calculando) return;
 

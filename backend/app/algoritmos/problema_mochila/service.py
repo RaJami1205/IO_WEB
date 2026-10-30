@@ -1,3 +1,4 @@
+# Prepara los límites de cada variante y transforma la solución de mochila en respuesta HTTP.
 import math
 from fractions import Fraction
 
@@ -5,6 +6,7 @@ from app.algoritmos.problema_mochila.schemas import MochilaRequest, MochilaRespo
 from app.algoritmos.problema_mochila.solver import solve
 
 
+# Convierte recursivamente fracciones a enteros o flotantes representables en JSON.
 def json_numbers(value):
     if isinstance(value, Fraction):
         if value.denominator == 1:
@@ -24,6 +26,7 @@ def json_numbers(value):
     return value
 
 
+# Traduce la variante a un límite de copias por objeto; None indica ausencia de tope.
 def topes_por_variante(request: MochilaRequest) -> list[int | None]:
     if request.variante == "0-1":
         return [1] * len(request.objetos)
@@ -32,8 +35,8 @@ def topes_por_variante(request: MochilaRequest) -> list[int | None]:
     return [None] * len(request.objetos)
 
 
+# Describe únicamente los objetos elegidos, con sus copias y totales de peso y valor.
 def armar_seleccion(request: MochilaRequest, valores: list[Fraction], copias_elegidas: list[int]) -> list[dict]:
-    #lista solo los objetos que se llevan con sus copias peso y valor
     seleccion = []
     for posicion, copias in enumerate(copias_elegidas):
         if copias == 0:
@@ -49,6 +52,7 @@ def armar_seleccion(request: MochilaRequest, valores: list[Fraction], copias_ele
     return seleccion
 
 
+# Invoca el solver con valores exactos y construye la selección, tablas y conclusión.
 def resolver_mochila(request: MochilaRequest) -> MochilaResponse:
     capacidad_total = request.capacidad
     cantidad_objetos = len(request.objetos)

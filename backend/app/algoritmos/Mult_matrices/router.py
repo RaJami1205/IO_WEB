@@ -1,4 +1,4 @@
-
+# Atiende POST /api/multiplicacion-matrices y delega la cadena al servicio.
 
 from fastapi import APIRouter
 

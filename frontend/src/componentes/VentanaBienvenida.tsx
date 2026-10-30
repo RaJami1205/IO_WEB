@@ -1,3 +1,4 @@
+/** Presenta la bienvenida y la plantilla compartida con navegación y estado del backend. */
 import type { ReactNode } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -51,12 +52,13 @@ type PlantillaGeneralProps = {
 
 type EstadoBackend = "consultando" | "activo" | "inactivo";
 
+/** Vincula cada comprobación de disponibilidad con la ruta que la originó. */
 type VerificacionBackend = {
   ruta: string;
   estado: EstadoBackend;
 };
 
-// Encabezado y pie compartidos por todas las páginas.
+/** Envuelve las vistas con navegación, indicador de conexión y pie compartidos. */
 export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
   const ubicacion = useLocation();
 
@@ -78,6 +80,7 @@ export function PlantillaGeneral({ children }: PlantillaGeneralProps) {
 
     const timeout = setTimeout(() => controller.abort(), 5000);
 
+    /** Consulta health y actualiza el estado mientras la vista siga montada. */
     const verificarBackend = async () => {
       try {
         const respuesta = await fetch("/api/health", {

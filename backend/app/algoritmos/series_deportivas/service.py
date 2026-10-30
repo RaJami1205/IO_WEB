@@ -1,7 +1,9 @@
+# Convierte la solución de Series Deportivas en probabilidades, tabla y pasos para la API.
 from app.algoritmos.series_deportivas.schemas import SeriesRequest, SeriesResponse
 from app.algoritmos.series_deportivas.solver import solve
 
 
+# Extrae F(k,k), obtiene la probabilidad complementaria y construye la respuesta.
 def solve_series(request: SeriesRequest) -> SeriesResponse:
     solution = solve(request.juegos, request.ph, request.pr, request.formato)
     k = solution.victorias_necesarias
