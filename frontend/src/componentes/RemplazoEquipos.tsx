@@ -1,4 +1,5 @@
 /** Gestiona períodos de uso y JSON; presenta costos y planes de reemplazo calculados por FastAPI. */
+import { useConexionCalculo } from "../hooks/useConexionCalculo";
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import "../estilos/RemplazoEquipos.css";
@@ -157,7 +158,8 @@ export default function RemplazoEquipos() {
   const [listaEquipos, cambiarListaEquipos] = useState<Equipo[]>([]);
   const [resultadoBackend, cambiarResultadoBackend] =
     useState<RespuestaReemplazo | null>(null);
-  const [calculando, cambiarCalculando] = useState(false);
+  const { fase, iniciar } = useConexionCalculo();
+  const calculando = fase !== "reposo";
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
 
@@ -287,47 +289,29 @@ export default function RemplazoEquipos() {
   }
   /** Comprueba la conexión y solicita los costos y planes de reemplazo al backend. */
   async function calcularReemplazo() {
-    if (calculando) return;
+    const operacion = iniciar();
+    if (!operacion) return;
 
     limpiarResultados();
-    cambiarCalculando(true);
 
     try {
-      //  VERIFICAR SI EL BACKEND ESTÁ ACTIVO
-      try {
-        const salud = await fetch("/api/health", {
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (!salud.ok) {
-          throw new Error("Servidor no disponible");
-        }
-
-        const datosSalud: unknown = await salud.json();
-
-        if (!esObjeto(datosSalud) || datosSalud.status !== "ok") {
-          throw new Error("Servidor no disponible");
-        }
-      } catch {
-        throw new Error(
-          "No se pudo conectar con el servidor. Verifica que el backend esté activo.",
-        );
-      }
-
-      //  VALIDAR LOS DATOS DEL FORMULARIO
+      // Validar y capturar antes de esperar al backend.
       const configuracion = obtenerConfiguracionActual();
+      const cuerpo = JSON.stringify(configuracion);
+      await operacion.esperarConexion();
+      operacion.iniciarPost();
 
-      //ENVIAR LOS DATOS AL BACKEND
       let respuesta: Response;
 
       try {
-        respuesta = await fetch("/api/reemplazo-equipos", {
+        respuesta = await operacion.esperar(fetch("/api/reemplazo-equipos", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(configuracion),
-        });
+          body: cuerpo,
+          signal: operacion.signal,
+        }));
       } catch {
         throw new Error(
           "Se perdió la conexión con el servidor. Inténtalo nuevamente.",
@@ -339,7 +323,7 @@ export default function RemplazoEquipos() {
         let mensaje = `El servidor devolvió HTTP ${respuesta.status}.`;
 
         try {
-          const errorBackend: unknown = await respuesta.json();
+          const errorBackend: unknown = await operacion.esperar(respuesta.json());
 
           if (esObjeto(errorBackend)) {
             if (typeof errorBackend.detail === "string") {
@@ -363,19 +347,23 @@ export default function RemplazoEquipos() {
       }
 
       //  PROCESAR LA RESPUESTA
-      const datos: unknown = await respuesta.json();
+      const datos: unknown = await operacion.esperar(respuesta.json());
+      operacion.finPost();
+      operacion.comprobar();
 
       cambiarResultadoBackend(validarRespuesta(datos));
 
       cambiarMensajeExito("Cálculo realizado correctamente.");
     } catch (error) {
+      if (!operacion.vigente()) return;
+      const causa = operacion.signal.aborted ? operacion.signal.reason : error;
       cambiarMensajeError(
-        error instanceof Error
-          ? error.message
+        causa instanceof Error
+          ? causa.message
           : "No fue posible calcular el reemplazo de equipos.",
       );
     } finally {
-      cambiarCalculando(false);
+      operacion.finalizar();
     }
   }
 
@@ -552,7 +540,7 @@ export default function RemplazoEquipos() {
                 onClick={calcularReemplazo}
                 disabled={calculando}
               >
-                {calculando ? "Calculando..." : "Calcular reemplazo"}
+                {calculando ? (fase === "conectando" ? "Conectando con el servidor…" : "Calculando…") : "Calcular reemplazo"}
               </button>
             </div>
           </section>

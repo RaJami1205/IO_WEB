@@ -1,4 +1,5 @@
 /** Gestiona las dimensiones y el JSON de matrices; muestra el óptimo y anima las tablas de FastAPI. */
+import { useConexionCalculo } from "../hooks/useConexionCalculo";
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import "../estilos/MultiplicacionMatrices.css";
@@ -213,7 +214,8 @@ export default function MultiplicacionMatrices() {
   );
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
-  const [calculando, cambiarCalculando] = useState(false);
+  const { fase, iniciar } = useConexionCalculo();
+  const calculando = fase !== "reposo";
   const [respuestaBackend, cambiarRespuestaBackend] =
     useState<RespuestaMatrices | null>(null);
   const [celdasVisibles, cambiarCeldasVisibles] = useState(0);
@@ -310,44 +312,28 @@ export default function MultiplicacionMatrices() {
   }
   /** Comprueba la conexión y solicita al backend el costo, la parentización y las tablas. */
   async function calcularMatrices() {
-    if (calculando) return;
+    const operacion = iniciar();
+    if (!operacion) return;
 
     limpiarResultados();
-    cambiarCalculando(true);
 
     try {
-      try {
-        const salud = await fetch("/api/health", {
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (!salud.ok) {
-          throw new Error("Servidor no disponible");
-        }
-
-        const datosSalud: unknown = await salud.json();
-
-        if (!esObjeto(datosSalud) || datosSalud.status !== "ok") {
-          throw new Error("Servidor no disponible");
-        }
-      } catch {
-        throw new Error(
-          "No se pudo conectar con el servidor. Verifica que el backend esté activo.",
-        );
-      }
-
       const configuracion = obtenerConfiguracionActual();
+      const cuerpo = JSON.stringify(configuracion);
+      await operacion.esperarConexion();
+      operacion.iniciarPost();
 
       let respuesta: Response;
 
       try {
-        respuesta = await fetch("/api/multiplicacion-matrices", {
+        respuesta = await operacion.esperar(fetch("/api/multiplicacion-matrices", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(configuracion),
-        });
+          body: cuerpo,
+          signal: operacion.signal,
+        }));
       } catch {
         throw new Error(
           "Se perdió la conexión con el servidor. Inténtalo nuevamente.",
@@ -358,7 +344,7 @@ export default function MultiplicacionMatrices() {
         let detalle = `El servidor devolvió HTTP ${respuesta.status}.`;
 
         try {
-          const errorBackend: unknown = await respuesta.json();
+          const errorBackend: unknown = await operacion.esperar(respuesta.json());
 
           if (esObjeto(errorBackend)) {
             if (typeof errorBackend.detail === "string") {
@@ -381,18 +367,22 @@ export default function MultiplicacionMatrices() {
         throw new Error(detalle);
       }
 
-      const datos: unknown = await respuesta.json();
+      const datos: unknown = await operacion.esperar(respuesta.json());
+      operacion.finPost();
+      operacion.comprobar();
 
       cambiarRespuestaBackend(validarRespuesta(datos));
       cambiarMensajeExito("Cálculo completado.");
     } catch (error) {
+      if (!operacion.vigente()) return;
+      const causa = operacion.signal.aborted ? operacion.signal.reason : error;
       cambiarMensajeError(
-        error instanceof Error
-          ? error.message
+        causa instanceof Error
+          ? causa.message
           : "No fue posible calcular la multiplicación de matrices.",
       );
     } finally {
-      cambiarCalculando(false);
+      operacion.finalizar();
     }
   }
 
@@ -567,7 +557,7 @@ export default function MultiplicacionMatrices() {
                   onClick={calcularMatrices}
                   disabled={calculando}
                 >
-                  {calculando ? "Calculando..." : "Calcular asociación óptima"}
+                  {calculando ? (fase === "conectando" ? "Conectando con el servidor…" : "Calculando…") : "Calcular asociación óptima"}
                 </button>
               </div>
             </div>

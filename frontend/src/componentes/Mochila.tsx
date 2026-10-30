@@ -1,4 +1,5 @@
 /** Gestiona las variantes y objetos de mochila; consulta FastAPI y presenta la selección y tablas. */
+import { useConexionCalculo } from "../hooks/useConexionCalculo";
 import { useState } from "react";
 import "../estilos/Mochila.css";
 import type { ChangeEvent, FormEvent } from "react";
@@ -161,7 +162,8 @@ export default function Mochila() {
   const [mostrarTodoResultado, cambiarMostrarTodoResultado] = useState(true);
   const [resultadoBackend, cambiarResultadoBackend] =
     useState<RespuestaMochila | null>(null);
-  const [calculando, cambiarCalculando] = useState(false);
+  const { fase, iniciar } = useConexionCalculo();
+  const calculando = fase !== "reposo";
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
 
@@ -321,44 +323,28 @@ export default function Mochila() {
 
   /** Comprueba la conexión y solicita al backend la selección y las tablas de mochila. */
   async function calcularMochila() {
-    if (calculando) return;
+    const operacion = iniciar();
+    if (!operacion) return;
 
     limpiarResultados();
-    cambiarCalculando(true);
 
     try {
-      try {
-        const salud = await fetch("/api/health", {
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (!salud.ok) {
-          throw new Error("Servidor no disponible");
-        }
-
-        const datosSalud: unknown = await salud.json();
-
-        if (!esObjeto(datosSalud) || datosSalud.status !== "ok") {
-          throw new Error("Servidor no disponible");
-        }
-      } catch {
-        throw new Error(
-          "No se pudo conectar con el servidor. Verifica que el backend esté activo.",
-        );
-      }
-
       const configuracion = obtenerConfiguracionActual();
+      const cuerpo = JSON.stringify(configuracion);
+      await operacion.esperarConexion();
+      operacion.iniciarPost();
 
       let respuesta: Response;
 
       try {
-        respuesta = await fetch("/api/problema-mochila", {
+        respuesta = await operacion.esperar(fetch("/api/problema-mochila", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(configuracion),
-        });
+          body: cuerpo,
+          signal: operacion.signal,
+        }));
       } catch {
         throw new Error(
           "Se perdió la conexión con el servidor. Inténtalo nuevamente.",
@@ -369,7 +355,7 @@ export default function Mochila() {
         let mensaje = `Error HTTP ${respuesta.status} del servidor.`;
 
         try {
-          const errorBackend: unknown = await respuesta.json();
+          const errorBackend: unknown = await operacion.esperar(respuesta.json());
 
           if (esObjeto(errorBackend)) {
             if (typeof errorBackend.detail === "string") {
@@ -397,19 +383,23 @@ export default function Mochila() {
         throw new Error(mensaje);
       }
 
-      const datos: unknown = await respuesta.json();
+      const datos: unknown = await operacion.esperar(respuesta.json());
+      operacion.finPost();
+      operacion.comprobar();
 
       cambiarResultadoBackend(validarRespuesta(datos));
       cambiarMostrarTodoResultado(true);
       cambiarMensajeExito("Cálculo completado.");
     } catch (error) {
+      if (!operacion.vigente()) return;
+      const causa = operacion.signal.aborted ? operacion.signal.reason : error;
       cambiarMensajeError(
-        error instanceof Error
-          ? error.message
+        causa instanceof Error
+          ? causa.message
           : "No fue posible calcular el problema de la mochila.",
       );
     } finally {
-      cambiarCalculando(false);
+      operacion.finalizar();
     }
   }
   return (
@@ -614,7 +604,7 @@ export default function Mochila() {
                 disabled={calculando}
                 onClick={calcularMochila}
               >
-                {calculando ? "Calculando..." : "Calcular mochila"}
+                {calculando ? (fase === "conectando" ? "Conectando con el servidor…" : "Calculando…") : "Calcular mochila"}
               </button>
             </div>
           </section>

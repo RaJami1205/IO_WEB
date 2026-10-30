@@ -1,4 +1,5 @@
 /** Gestiona la serie y sus archivos JSON; consulta FastAPI y revela la tabla recibida. */
+import { useConexionCalculo } from "../hooks/useConexionCalculo";
 import type { ChangeEvent, FormEvent } from "react";
 import "../estilos/SeriesDeportivas.css";
 import { useState } from "react";
@@ -113,7 +114,8 @@ function SeriesDeportivas() {
   // Mensajes y resultados.
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
-  const [calculando, cambiarCalculando] = useState(false);
+  const { fase, iniciar } = useConexionCalculo();
+  const calculando = fase !== "reposo";
   const [tablaProbabilidades, cambiarTablaProbabilidades] = useState<
     number[][] | null
   >(null);
@@ -243,44 +245,28 @@ function SeriesDeportivas() {
   async function calcularSerie(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
 
-    if (calculando) return;
+    const operacion = iniciar();
+    if (!operacion) return;
 
     limpiarMensajes();
-    cambiarCalculando(true);
 
     try {
-      try {
-        const salud = await fetch("/api/health", {
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (!salud.ok) {
-          throw new Error("Servidor no disponible");
-        }
-
-        const datosSalud = await salud.json();
-
-        if (datosSalud.status !== "ok") {
-          throw new Error("Servidor no disponible");
-        }
-      } catch {
-        throw new Error(
-          "No se pudo conectar con el servidor. Verifica que el backend esté activo.",
-        );
-      }
-
       const configuracion = obtenerConfiguracionActual();
+      const cuerpo = JSON.stringify(configuracion);
+      await operacion.esperarConexion();
+      operacion.iniciarPost();
 
       let respuesta: Response;
 
       try {
-        respuesta = await fetch("/api/series-deportivas", {
+        respuesta = await operacion.esperar(fetch("/api/series-deportivas", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(configuracion),
-        });
+          body: cuerpo,
+          signal: operacion.signal,
+        }));
       } catch {
         throw new Error(
           "Se perdió la conexión con el servidor. Inténtalo nuevamente.",
@@ -291,7 +277,7 @@ function SeriesDeportivas() {
         let mensaje = `El servidor devolvió HTTP ${respuesta.status}.`;
 
         try {
-          const errorBackend: unknown = await respuesta.json();
+          const errorBackend: unknown = await operacion.esperar(respuesta.json());
 
           if (
             typeof errorBackend === "object" &&
@@ -324,7 +310,9 @@ function SeriesDeportivas() {
         throw new Error(mensaje);
       }
 
-      const datos = await respuesta.json();
+      const datos = await operacion.esperar(respuesta.json());
+      operacion.finPost();
+      operacion.comprobar();
 
       const matriz: number[][] = datos.tablas.F;
 
@@ -337,19 +325,22 @@ function SeriesDeportivas() {
       );
 
       for (let i = 1; i <= totalCeldas; i++) {
-        await new Promise((resolver) => setTimeout(resolver, 200));
+        await operacion.pausa(200);
+        operacion.comprobar();
         cambiarCeldasVisibles(i);
       }
 
       cambiarMensajeExito("Cálculo realizado correctamente.");
     } catch (error) {
+      if (!operacion.vigente()) return;
+      const causa = operacion.signal.aborted ? operacion.signal.reason : error;
       cambiarMensajeError(
-        error instanceof Error
-          ? error.message
+        causa instanceof Error
+          ? causa.message
           : "No fue posible calcular la serie deportiva.",
       );
     } finally {
-      cambiarCalculando(false);
+      operacion.finalizar();
     }
   }
 
@@ -553,7 +544,7 @@ function SeriesDeportivas() {
                   className="boton-calcular"
                   disabled={calculando}
                 >
-                  {calculando ? "Calculando..." : "Calcular probabilidad"}
+                  {calculando ? (fase === "conectando" ? "Conectando con el servidor…" : "Calculando…") : "Calcular probabilidad"}
                 </button>
               </div>
             </form>
