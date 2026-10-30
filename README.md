@@ -1,40 +1,59 @@
-<h1 align="center">IO WEB</h1>
+<h1 align="center">💻 IO WEB</h1>
 <p align="center"><strong>Simulador interactivo de Programación Dinámica.</strong></p>
 <p align="center">Investigación de Operaciones · Tecnológico de Costa Rica · 2026</p>
 
-IO WEB permite ingresar problemas y visualizar tablas y soluciones de cinco algoritmos de Programación Dinámica. Esta técnica reutiliza resultados de subproblemas para calcular probabilidades o encontrar soluciones óptimas. React recoge los datos y presenta las respuestas; Python realiza los cálculos matemáticos.
+<p align="center">Una herramienta educativa para explorar <strong>cinco algoritmos de Programación Dinámica</strong>: ingresar problemas, visualizar tablas y comprender soluciones. La técnica reutiliza resultados de subproblemas para calcular probabilidades y encontrar decisiones óptimas.</p>
+<p align="center"><strong>React</strong> permite introducir datos e interactuar con los resultados; <strong>FastAPI</strong> recibe las solicitudes y coordina los cálculos matemáticos realizados en <strong>Python</strong>.</p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-20232A?logo=react&amp;logoColor=61DAFB" alt="React">
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&amp;logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&amp;logoColor=white" alt="Vite">
-  <img src="https://img.shields.io/badge/Node.js-339933?logo=nodedotjs&amp;logoColor=white" alt="Node.js">
-  <img src="https://img.shields.io/badge/Python-3776AB?logo=python&amp;logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&amp;logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&amp;logo=react&amp;logoColor=61DAFB" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&amp;logo=typescript&amp;logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&amp;logo=vite&amp;logoColor=white" alt="Vite">
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&amp;logo=nodedotjs&amp;logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&amp;logo=python&amp;logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&amp;logo=fastapi&amp;logoColor=white" alt="FastAPI">
 </p>
 
 <p align="center">
-  <img src="assets/panel.png" alt="Panel principal de IO WEB con estado del servidor y navegación a los cinco algoritmos" width="900">
+  <img src="assets/panel.png" alt="Panel principal de IO WEB con estado del servidor y navegación a los cinco algoritmos" width="100%">
 </p>
 
-## Contenido
+---
 
-- [Características y algoritmos](#características-y-algoritmos)
-- [Arquitectura y tecnologías](#arquitectura-y-tecnologías)
-- [Instalación y ejecución](#instalación-y-ejecución)
-- [API](#api)
-- [Pruebas y calidad](#pruebas-y-calidad)
-- [Flujo Git y GitHub](#flujo-git-y-github)
-- [Uso de inteligencia artificial](#uso-de-inteligencia-artificial)
-- [Equipo y documentación](#equipo-y-documentación)
+## 📑 Contenido
 
-## Características y algoritmos
+- [Características principales](#caracteristicas)
+- [Algoritmos implementados](#algoritmos)
+- [Arquitectura del sistema](#arquitectura)
+- [Tecnologías y herramientas](#tecnologias)
+- [Estructura del proyecto](#estructura)
+- [Requisitos e instalación](#instalacion)
+- [Ejecución con un solo comando](#ejecucion)
+- [API REST](#api)
+- [Pruebas y calidad](#pruebas)
+- [Flujo Git y GitHub](#git)
+- [Uso responsable de IA](#ia)
+- [Equipo y documentación](#equipo)
+
+---
+
+<a id="caracteristicas"></a>
+
+## ✨ Características principales
 
 - Formularios por algoritmo, validación de entradas y carga/guardado de configuraciones JSON.
 - Tablas, resultados y conclusiones calculados por el backend.
 - Revelado progresivo de tablas en Series, ABB y Matrices; la presentación varía por módulo y no constituye un reproductor uniforme de trazas.
 - Menú común con indicador de disponibilidad del servidor.
 - API REST, pruebas automatizadas y arranque de desarrollo desde una sola terminal.
+
+---
+
+<a id="algoritmos"></a>
+
+## 🧠 Algoritmos implementados
 
 | Algoritmo | Objetivo | Resultado principal |
 | --- | --- | --- |
@@ -44,19 +63,51 @@ IO WEB permite ingresar problemas y visualizar tablas y soluciones de cinco algo
 | Árbol Binario de Búsqueda Óptimo | Minimizar el costo promedio de búsqueda según los pesos de las llaves. | Tablas A y R, costo y raíz; utiliza probabilidades redondeadas a dos decimales según la convención implementada. |
 | Multiplicación Óptima de Matrices | Elegir el orden de una cadena de multiplicaciones con menor costo escalar. | Tablas M y P, costo mínimo y parentización óptima. |
 
-## Arquitectura y tecnologías
+---
 
-El monorepositorio separa la interfaz y una API sin base de datos. El cliente envía JSON por HTTP; FastAPI recibe las solicitudes y Pydantic valida entradas y respuestas. En desarrollo, Vite reenvía `/api` a `http://127.0.0.1:8000`.
+<a id="arquitectura"></a>
 
-```mermaid
-flowchart LR
-    U[Usuario] --> R[React + TypeScript]
-    R <-->|HTTP / JSON vía proxy Vite| A[FastAPI + Pydantic]
-    A --> S[Servicios por algoritmo]
-    S --> P[Solvers Python]
+## 🏗️ Arquitectura del sistema
+
+El monorepositorio separa la interfaz y una API sin base de datos. El cálculo matemático permanece en el backend, independiente de su presentación.
+
+```text
+Usuario / Navegador
+         │
+         ▼
+React + TypeScript
+         │  HTTP / JSON
+         ▼
+Proxy Vite (/api) · Desarrollo
+         │
+         ▼
+FastAPI + Pydantic
+         │
+         ▼
+Router → Service → Solver Python
+         │
+         ▼
+Resultados JSON → Interfaz React
 ```
 
-Cada módulo backend separa `router.py` (HTTP), `schemas.py` (contratos y validación), `service.py` (coordinación y serialización) y `solver.py` (cálculo matemático). React comparte la plantilla de navegación y mantiene formularios y vistas por algoritmo. Las funciones y módulos cuentan con documentación interna.
+**Frontend:** formularios, validación inmediata, interacción y visualización. React comparte la plantilla de navegación y mantiene vistas por algoritmo.
+
+**Backend:** recepción, validación definitiva, coordinación y Programación Dinámica. Las funciones y módulos cuentan con documentación interna.
+
+| Archivo por algoritmo | Responsabilidad |
+| --- | --- |
+| `router.py` | Recibir solicitudes HTTP y delegarlas al servicio. |
+| `schemas.py` | Definir contratos y validar entradas y respuestas con Pydantic. |
+| `service.py` | Coordinar el cálculo y serializar la respuesta. |
+| `solver.py` | Resolver el problema matemático en Python. |
+
+**Comunicación:** el cliente intercambia JSON por HTTP. Durante el desarrollo, Vite reenvía `/api` a `http://127.0.0.1:8000`.
+
+---
+
+<a id="tecnologias"></a>
+
+## 🛠️ Tecnologías y herramientas
 
 | Responsabilidad | Herramientas |
 | --- | --- |
@@ -64,6 +115,12 @@ Cada módulo backend separa `router.py` (HTTP), `schemas.py` (contratos y valida
 | API y cálculo | Python, FastAPI, Pydantic, Uvicorn |
 | Pruebas y calidad | pytest, HTTPX/TestClient, Vitest, Testing Library, jsdom, ESLint, compilador TypeScript |
 | Desarrollo y colaboración | Node.js, npm, Git, GitHub, GitHub Actions |
+
+---
+
+<a id="estructura"></a>
+
+## 📂 Estructura del proyecto
 
 ```text
 IO_WEB/
@@ -88,24 +145,35 @@ IO_WEB/
 └── README.md
 ```
 
-## Instalación y ejecución
+---
 
-### Requisitos
+<a id="instalacion"></a>
+
+## ⚙️ Requisitos e instalación
+
+### 1. Requisitos
 
 - Git para clonar el repositorio.
 - **Node.js 22.12.0 o superior**, con npm, según el lanzador raíz. CI utiliza Node.js 24.
 - **Python 3.12 o superior**, disponible como `python` en Windows o `python3` en Linux/macOS.
 - Puertos **8000** y **5173** disponibles.
 
-### Preparación inicial
+### 2. Preparación inicial
 
 ```sh
 git clone https://github.com/RaJami1205/IO_WEB.git
 cd IO_WEB
+```
+
+### 3. Instalación de dependencias
+
+Desde la raíz, instala las dependencias del frontend:
+
+```sh
 npm --prefix frontend ci
 ```
 
-Desde esa misma raíz, crea el entorno e instala las dependencias Python, incluidas las herramientas de pruebas.
+Luego crea el entorno e instala las dependencias Python, incluidas las herramientas de pruebas.
 
 **Windows / PowerShell:**
 
@@ -123,7 +191,13 @@ python3 -m venv backend/.venv
 
 No es necesario activar el entorno virtual. `requirements-dev.txt` incluye `requirements.txt`; este último basta para ejecutar sin herramientas de pruebas. La raíz no tiene dependencias npm que instalar.
 
-### Un solo comando
+---
+
+<a id="ejecucion"></a>
+
+## 🚀 Ejecución con un solo comando
+
+### Arranque
 
 Después de la preparación, ejecuta desde la raíz:
 
@@ -133,6 +207,8 @@ npm run dev
 
 El lanzador nativo de Node.js comprueba los entornos y puertos, inicia FastAPI con recarga y espera su health. Luego inicia Vite con puerto estricto, verifica la interfaz y el health a través del proxy y muestra las URLs. No instala dependencias automáticamente.
 
+### URLs disponibles
+
 | Recurso | Dirección local |
 | --- | --- |
 | Interfaz | [localhost:5173](http://localhost:5173) |
@@ -140,13 +216,25 @@ El lanzador nativo de Node.js comprueba los entornos y puertos, inicia FastAPI c
 | Swagger UI | [127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) |
 | Health | [127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health) |
 
-Frontend y backend siguen siendo procesos separados, administrados desde una terminal. **Pulsa Ctrl+C para solicitar el cierre de ambos.** El lanzador supervisa los procesos y la salud del proxy, y cierra los servicios propios ante un fallo. Uvicorn conserva sus mensajes de inicio, advertencias y errores, con el registro de accesos desactivado para evitar ruido por las consultas de salud.
+### Cierre y supervisión
 
-Si un puerto está ocupado, el arranque se rechaza sin cerrar al ocupante. El plazo de disponibilidad es de 30 segundos por servicio. El cierre real con Ctrl+C y el reinicio deben comprobarse en la terminal de destino; no se garantiza la limpieza tras terminar abruptamente el proceso padre. El manejo de grupos y señales de Linux/macOS no se ha validado experimentalmente en esta revisión.
+Frontend y backend siguen siendo procesos separados, administrados desde una terminal. **Pulsa Ctrl+C para solicitar el cierre de ambos.** El lanzador supervisa los procesos y la salud del proxy, y cierra los servicios propios ante un fallo.
+
+Uvicorn conserva sus mensajes de inicio, advertencias y errores, con el registro de accesos desactivado para evitar ruido por las consultas de salud.
+
+Si un puerto está ocupado, el arranque se rechaza sin cerrar al ocupante. El plazo de disponibilidad es de 30 segundos por servicio.
+
+El cierre real con Ctrl+C y el reinicio deben comprobarse en la terminal de destino; no se garantiza la limpieza tras terminar abruptamente el proceso padre. El manejo de grupos y señales de Linux/macOS no se ha validado experimentalmente en esta revisión.
+
+### Ejecución independiente
 
 El frontend también puede iniciarse por separado con `npm --prefix frontend run dev`; necesita la API activa para resolver problemas. El arranque independiente de la API se describe en [backend/README.md](backend/README.md).
 
-## API
+---
+
+<a id="api"></a>
+
+## 🔌 API REST
 
 Con el backend iniciado, [Swagger UI](http://127.0.0.1:8000/docs) permite consultar y probar los contratos actuales; [OpenAPI](http://127.0.0.1:8000/openapi.json) expone sus esquemas.
 
@@ -161,9 +249,15 @@ Con el backend iniciado, [Swagger UI](http://127.0.0.1:8000/docs) permite consul
 
 Health responde `{"status":"ok"}`. Los solucionadores reciben configuraciones JSON y devuelven resultados y tablas; los detalles adicionales dependen del módulo. Las entradas inválidas se rechazan con HTTP 422. El [README del backend](backend/README.md) contiene ejemplos y convenciones de varios módulos; para el contrato completo vigente, consulta Swagger.
 
-## Pruebas y calidad
+---
 
-**Backend**, desde la raíz:
+<a id="pruebas"></a>
+
+## 🧪 Pruebas y calidad
+
+### Backend
+
+Desde la raíz:
 
 ```powershell
 # Windows / PowerShell
@@ -174,7 +268,9 @@ cd ..
 
 En Linux/macOS, dentro de `backend/`, utiliza `./.venv/bin/python -m pytest -q`. Las pruebas cubren validación, endpoints, resultados matemáticos, casos límite y, según el módulo, reconstrucción de tablas y comparación con enumeraciones independientes.
 
-**Frontend**, desde la raíz, en cualquiera de los sistemas:
+### Frontend
+
+Desde la raíz, en cualquiera de los sistemas:
 
 ```sh
 npm --prefix frontend test
@@ -184,13 +280,21 @@ npm --prefix frontend run build
 
 Vitest y Testing Library verifican validaciones y carga de configuraciones en los componentes. ESLint revisa el código; el build comprueba TypeScript y genera la distribución con Vite. Estas comprobaciones se complementan con pruebas manuales de navegación, resolución de ejercicios y cierre/reinicio del lanzador.
 
-## Flujo Git y GitHub
+---
+
+<a id="git"></a>
+
+## 🌿 Flujo Git y GitHub
 
 ```text
 feature/*  ── Pull Request ──>  dev  ── Pull Request ──>  main
 ```
 
-Las ramas `feature/*` aíslan los cambios; `dev` integra y valida el trabajo conjunto; `main` reúne las versiones consolidadas. La política del equipo establece revisión de código, una aprobación hacia `dev`, dos hacia `main`, checks obligatorios, conversaciones resueltas y rama actualizada cuando se requiera. También establece proteger `dev` y `main` frente a pushes directos y cambios que eludan la revisión.
+Las ramas `feature/*` aíslan los cambios; `dev` integra y valida el trabajo conjunto; `main` reúne las versiones consolidadas.
+
+**Política de revisión.** El equipo establece revisión de código, una aprobación hacia `dev`, dos hacia `main`, checks obligatorios, conversaciones resueltas y rama actualizada cuando se requiera. También establece proteger `dev` y `main` frente a pushes directos y cambios que eludan la revisión.
+
+### Checks configurados
 
 Los workflows presentes definen:
 
@@ -200,13 +304,23 @@ Los workflows presentes definen:
 
 La presencia de estos workflows confirma las comprobaciones configuradas, no su último resultado ni la activación de protecciones remotas. Las reglas efectivas deben consultarse en GitHub. Véanse [CI](.github/workflows/ci.yml), [política de PR](.github/workflows/pr-policy.yml) y [guía de contribución](CONTRIBUTING.md).
 
-## Uso de inteligencia artificial
+---
 
-Durante el desarrollo se utilizaron **Herramientas de IA** como apoyo en consultas conceptuales y matemáticas, revisión de enfoques de Programación Dinámica, análisis de código, identificación de casos límite, preparación y revisión de pruebas, depuración, integración y documentación. La asistencia abarcó propuestas de implementación y verificación, además de documentación.
+<a id="ia"></a>
 
-El equipo definió los objetivos y requisitos, revisó las implementaciones y mantuvo la responsabilidad sobre las decisiones de diseño, la aceptación y la integración de cambios. Los resultados se contrastaron con ejercicios disponibles y pruebas independientes; las propuestas de IA se evaluaron dentro de ese proceso, sin considerar su generación como evidencia de corrección. Cada integrante conserva la responsabilidad de comprender, explicar y validar el código que presenta.
+## 🤖 Uso responsable de IA
 
-## Equipo y documentación
+Las **herramientas de IA** apoyaron el análisis conceptual y matemático, la revisión de enfoques e implementaciones, la identificación de casos límite, las pruebas, la depuración y la documentación. Su asistencia incluyó propuestas de implementación y verificación.
+
+**Responsabilidad del equipo.** Los integrantes definieron los requisitos y mantuvieron las decisiones de diseño, la revisión del código, la integración y la aceptación de cambios.
+
+**Validación y comprensión.** Los resultados se contrastaron con ejercicios disponibles y pruebas independientes. Las propuestas de IA se evaluaron dentro de ese proceso; cada integrante conserva la responsabilidad de comprender, explicar y validar el código que presenta.
+
+---
+
+<a id="equipo"></a>
+
+## 👥 Equipo y documentación
 
 Proyecto académico desarrollado por **Raul, Elder y Diego**, según los créditos de la aplicación, para Investigación de Operaciones en el **Tecnológico de Costa Rica**.
 
