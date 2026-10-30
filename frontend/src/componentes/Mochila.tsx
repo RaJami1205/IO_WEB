@@ -460,20 +460,24 @@ export default function Mochila() {
                 />
               </label>
 
-              <label>
-                Cargar configuración JSON
+              <div className="acciones-archivo-abb">
+                <label htmlFor="archivo-abb" className="etiqueta-archivo-abb">
+                  Cargar JSON
+                </label>
                 <input
+                  id="archivo-abb"
                   type="file"
                   accept=".json,application/json"
                   onChange={cargarArchivoJson}
                 />
-              </label>
-            </div>
-
-            <div className="mochila-acciones">
-              <button type="button" onClick={guardarConfiguracionJson}>
-                Guardar JSON
-              </button>
+                <button
+                  type="button"
+                  className="boton-secundario-abb"
+                  onClick={guardarConfiguracionJson}
+                >
+                  Guardar JSON
+                </button>
+              </div>
             </div>
           </section>
 

@@ -35,21 +35,23 @@ describe("Reemplazo de Equipos: carga de archivos JSON", () => {
     render(<RemplazoEquipos />);
 
     const archivo = crearArchivo(JSON.stringify(datos));
-    const input = screen.getByLabelText(
-      "Cargar archivo JSON",
-    ) as HTMLInputElement;
+
+    const input = screen.getByLabelText(/cargar.*json/i) as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [archivo] } });
 
     expect(
       await screen.findByText("Archivo JSON cargado correctamente."),
     ).toBeTruthy();
+
     expect(
       (screen.getByLabelText("Costo inicial") as HTMLInputElement).value,
     ).toBe("500");
+
     expect(
       (screen.getByLabelText("Plazo (años)") as HTMLInputElement).value,
     ).toBe("5");
+
     expect(
       (screen.getByLabelText("Vida útil (años)") as HTMLInputElement).value,
     ).toBe("3");
@@ -59,9 +61,8 @@ describe("Reemplazo de Equipos: carga de archivos JSON", () => {
     render(<RemplazoEquipos />);
 
     const archivo = crearArchivo(JSON.stringify([]));
-    const input = screen.getByLabelText(
-      "Cargar archivo JSON",
-    ) as HTMLInputElement;
+
+    const input = screen.getByLabelText(/cargar.*json/i) as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [archivo] } });
 
@@ -74,11 +75,13 @@ describe("Reemplazo de Equipos: carga de archivos JSON", () => {
     render(<RemplazoEquipos />);
 
     const archivo = crearArchivo(
-      JSON.stringify({ ...datos, periodos: datos.periodos.slice(0, 2) }),
+      JSON.stringify({
+        ...datos,
+        periodos: datos.periodos.slice(0, 2),
+      }),
     );
-    const input = screen.getByLabelText(
-      "Cargar archivo JSON",
-    ) as HTMLInputElement;
+
+    const input = screen.getByLabelText(/cargar.*json/i) as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [archivo] } });
 
