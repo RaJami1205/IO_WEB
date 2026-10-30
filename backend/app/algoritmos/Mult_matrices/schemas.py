@@ -25,7 +25,7 @@ class Contract(BaseModel):
 class MatricesRequest(Contract):
 
     algoritmo: Literal["multiplicacion-matrices"]
-    dimensiones: Annotated[list[Dimension], Field(min_length=2)]
+    dimensiones: Annotated[list[Dimension], Field(min_length=2, max_length=11)]
 
 
 # ---------------------------------------------------------------------------
