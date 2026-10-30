@@ -432,7 +432,7 @@ export default function ArbolOptimo() {
 
     try {
       try {
-        const salud = await fetch("api/health", {
+        const salud = await fetch("/api/health", {
           signal: AbortSignal.timeout(5000),
         });
 
@@ -456,7 +456,7 @@ export default function ArbolOptimo() {
       let respuesta: Response;
 
       try {
-        respuesta = await fetch("api/abb-optimo", {
+        respuesta = await fetch("/api/abb-optimo", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

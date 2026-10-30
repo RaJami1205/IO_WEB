@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
   fireEvent,
@@ -10,7 +10,14 @@ import {
 } from "@testing-library/react";
 import ArbolOptimo from "../componentes/ArbolOptimo";
 
-afterEach(cleanup);
+const ubicacionInicial = window.location.href;
+const historialInicial = window.history.state;
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  window.history.replaceState(historialInicial, "", ubicacionInicial);
+});
 
 describe("Árbol Óptimo: carga de archivos JSON", () => {
   const datos = {
@@ -104,4 +111,41 @@ describe("Árbol Óptimo: carga de archivos JSON", () => {
       await screen.findByText('La llave "if" está repetida.'),
     ).toBeTruthy();
   });
+
+  it.each(["/ArbolOptimo", "/ArbolOptimo/"])(
+    "envía las solicitudes a la raíz del origen desde %s",
+    async (ruta) => {
+      window.history.replaceState(null, "", ruta);
+      // El error controlado completa la solicitud sin depender de tablas o animaciones.
+      const fetchMock = vi.fn<typeof fetch>()
+        .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok" })))
+        .mockResolvedValueOnce(new Response(
+          JSON.stringify({ detail: "Respuesta controlada de la API" }),
+          { status: 422 },
+        ));
+      vi.stubGlobal("fetch", fetchMock);
+      render(<ArbolOptimo />);
+
+      fireEvent.change(screen.getByLabelText("Cargar JSON"), {
+        target: { files: [crearArchivo(JSON.stringify(datos))] },
+      });
+      await screen.findByText("JSON cargado correctamente.");
+      fireEvent.click(screen.getByRole("button", { name: "Calcular árbol óptimo" }));
+      expect((await screen.findByRole("alert")).textContent)
+        .toBe("Respuesta controlada de la API");
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/health", {
+        signal: expect.any(AbortSignal),
+      });
+      expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/abb-optimo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos),
+      });
+      for (const [url] of fetchMock.mock.calls) {
+        expect(new URL(String(url), window.location.href).pathname).toBe(url);
+      }
+    },
+  );
 });

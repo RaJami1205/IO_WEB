@@ -1,10 +1,17 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import MultiplicacionMatrices from "../componentes/MultiplicacionMatrices";
 
-afterEach(cleanup);
+const ubicacionInicial = window.location.href;
+const historialInicial = window.history.state;
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  window.history.replaceState(historialInicial, "", ubicacionInicial);
+});
 
 describe("Multiplicación de Matrices: carga de archivos JSON", () => {
   const datos = {
@@ -78,4 +85,41 @@ describe("Multiplicación de Matrices: carga de archivos JSON", () => {
       ),
     ).toBeTruthy();
   });
+
+  it.each(["/multiplicacion-matrices", "/multiplicacion-matrices/"])(
+    "envía las solicitudes a la raíz del origen desde %s",
+    async (ruta) => {
+      window.history.replaceState(null, "", ruta);
+      // El error controlado completa la solicitud sin depender de tablas o animaciones.
+      const fetchMock = vi.fn<typeof fetch>()
+        .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok" })))
+        .mockResolvedValueOnce(new Response(
+          JSON.stringify({ detail: "Respuesta controlada de la API" }),
+          { status: 422 },
+        ));
+      vi.stubGlobal("fetch", fetchMock);
+      render(<MultiplicacionMatrices />);
+
+      fireEvent.change(screen.getByLabelText("Cargar JSON"), {
+        target: { files: [crearArchivo(JSON.stringify(datos))] },
+      });
+      await screen.findByText("Archivo cargado. Puedes editar las dimensiones.");
+      fireEvent.click(screen.getByRole("button", { name: "Calcular asociación óptima" }));
+      expect((await screen.findByRole("alert")).textContent)
+        .toBe("Respuesta controlada de la API");
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/health", {
+        signal: expect.any(AbortSignal),
+      });
+      expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/multiplicacion-matrices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos),
+      });
+      for (const [url] of fetchMock.mock.calls) {
+        expect(new URL(String(url), window.location.href).pathname).toBe(url);
+      }
+    },
+  );
 });

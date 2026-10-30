@@ -341,7 +341,7 @@ export default function MultiplicacionMatrices() {
       let respuesta: Response;
 
       try {
-        respuesta = await fetch("api/multiplicacion-matrices", {
+        respuesta = await fetch("/api/multiplicacion-matrices", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
