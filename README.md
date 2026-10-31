@@ -1,9 +1,8 @@
 <h1 align="center">💻 IO WEB</h1>
-<p align="center"><strong>Simulador interactivo de Programación Dinámica.</strong></p>
+<p align="center"><strong>Simulador interactivo de Programación Dinámica</strong></p>
 <p align="center">Investigación de Operaciones · Tecnológico de Costa Rica · 2026</p>
 
 <p align="center">Una herramienta educativa para explorar <strong>cinco algoritmos de Programación Dinámica</strong>: ingresar problemas, visualizar tablas y comprender soluciones. La técnica reutiliza resultados de subproblemas para calcular probabilidades y encontrar decisiones óptimas.</p>
-<p align="center"><strong>React</strong> permite introducir datos e interactuar con los resultados; <strong>FastAPI</strong> recibe las solicitudes y coordina los cálculos matemáticos realizados en <strong>Python</strong>.</p>
 
 
 <p align="center">
@@ -13,6 +12,10 @@
   <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&amp;logo=fastapi&amp;logoColor=white" alt="FastAPI">
 </p>
 
+
+<p align="center">
+  <a href="https://io-web-tau.vercel.app"><strong>App Desplegada</strong></a>
+</p>
 
 <p align="center">
   <img src="assets/panel.png" alt="Panel principal de IO WEB con estado del servidor y navegación a los cinco algoritmos" width="100%">
@@ -227,6 +230,34 @@ El cierre real con Ctrl+C y el reinicio deben comprobarse en la terminal de dest
 ### Ejecución independiente
 
 El frontend también puede iniciarse por separado con `npm --prefix frontend run dev`; necesita la API activa para resolver problemas. El arranque independiente de la API se describe en [backend/README.md](backend/README.md).
+
+---
+
+<a id="despliegue"></a>
+
+## 🚀 Despliegue en Producción
+
+### Frontend — Vercel
+
+La interfaz, desarrollada con **React, TypeScript y Vite**, está alojada en Vercel y disponible en [App Desplegada](https://io-web-tau.vercel.app). La versión pública se publica desde la versión consolidada en la rama `main`.
+
+### Backend — Render
+
+La API, desarrollada con **Python y FastAPI**, está alojada en Render como un **Web Service**. Su dirección base es [https://io-web-backend.onrender.com](https://io-web-backend.onrender.com); su disponibilidad puede consultarse en el [endpoint de salud `/api/health`](https://io-web-backend.onrender.com/api/health).
+
+### Comunicación entre servicios
+
+```text
+Usuario → Vercel (React) → Proxy /api → Render (FastAPI)
+```
+
+El usuario accede a la aplicación en Vercel. React realiza solicitudes a rutas relativas del origen actual, como `/api/health`, y Vercel las reenvía a Render mediante las rewrites de [frontend/vercel.json](frontend/vercel.json). FastAPI procesa las solicitudes de los cinco algoritmos y devuelve las respuestas que el frontend presenta al usuario.
+
+### Modalidad de despliegue
+
+**GitHub Actions ejecuta las validaciones de integración continua; los despliegues a producción se realizan manualmente.** No se implementó una automatización de CD para publicar cada cambio. Render mantiene **Auto-Deploy desactivado** y la configuración de Vercel deshabilita los despliegues automáticos desde Git mediante `git.deploymentEnabled: false`.
+
+El backend en el plan gratuito de Render puede necesitar un tiempo de reactivación después de un periodo de inactividad. La aplicación contempla verificaciones de conectividad y una espera controlada.
 
 ---
 
