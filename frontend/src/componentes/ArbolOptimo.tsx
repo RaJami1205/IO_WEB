@@ -1,4 +1,5 @@
 /** Gestiona llaves y archivos JSON; presenta las probabilidades y tablas A y R de FastAPI. */
+import { useConexionCalculo } from "../hooks/useConexionCalculo";
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import "../estilos/ArbolOptimo.css";
@@ -299,7 +300,8 @@ export default function ArbolOptimo() {
   const [nuevoPeso, cambiarNuevoPeso] = useState("");
   const [mensajeError, cambiarMensajeError] = useState("");
   const [mensajeExito, cambiarMensajeExito] = useState("");
-  const [calculando, cambiarCalculando] = useState(false);
+  const { fase, iniciar } = useConexionCalculo();
+  const calculando = fase !== "reposo";
   const [respuestaBackend, cambiarRespuestaBackend] =
     useState<RespuestaABB | null>(null);
   const [celdasVisibles, cambiarCeldasVisibles] = useState(0);
@@ -425,44 +427,28 @@ export default function ArbolOptimo() {
   }
   /** Comprueba la conexión y solicita al backend el costo, la raíz y las tablas del ABB. */
   async function calcularArbol() {
-    if (calculando) return;
+    const operacion = iniciar();
+    if (!operacion) return;
 
     limpiarResultados();
-    cambiarCalculando(true);
 
     try {
-      try {
-        const salud = await fetch("api/health", {
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (!salud.ok) {
-          throw new Error("Servidor no disponible");
-        }
-
-        const datosSalud: unknown = await salud.json();
-
-        if (!esObjeto(datosSalud) || datosSalud.status !== "ok") {
-          throw new Error("Servidor no disponible");
-        }
-      } catch {
-        throw new Error(
-          "No se pudo conectar con el servidor. Verifica que el backend esté activo.",
-        );
-      }
-
       const configuracion = obtenerConfiguracionActual();
+      const cuerpo = JSON.stringify(configuracion);
+      await operacion.esperarConexion();
+      operacion.iniciarPost();
 
       let respuesta: Response;
 
       try {
-        respuesta = await fetch("api/abb-optimo", {
+        respuesta = await operacion.esperar(fetch("/api/abb-optimo", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(configuracion),
-        });
+          body: cuerpo,
+          signal: operacion.signal,
+        }));
       } catch {
         throw new Error(
           "Se perdió la conexión con el servidor. Inténtalo nuevamente.",
@@ -473,7 +459,7 @@ export default function ArbolOptimo() {
         let detalle = `El servidor devolvió HTTP ${respuesta.status}.`;
 
         try {
-          const errorBackend: unknown = await respuesta.json();
+          const errorBackend: unknown = await operacion.esperar(respuesta.json());
 
           if (esObjeto(errorBackend)) {
             if (typeof errorBackend.detail === "string") {
@@ -496,18 +482,22 @@ export default function ArbolOptimo() {
         throw new Error(detalle);
       }
 
-      const datos: unknown = await respuesta.json();
+      const datos: unknown = await operacion.esperar(respuesta.json());
+      operacion.finPost();
+      operacion.comprobar();
 
       cambiarRespuestaBackend(validarRespuesta(datos));
       cambiarMensajeExito("Cálculo completado.");
     } catch (error) {
+      if (!operacion.vigente()) return;
+      const causa = operacion.signal.aborted ? operacion.signal.reason : error;
       cambiarMensajeError(
-        error instanceof Error
-          ? error.message
+        causa instanceof Error
+          ? causa.message
           : "No fue posible calcular el árbol óptimo.",
       );
     } finally {
-      cambiarCalculando(false);
+      operacion.finalizar();
     }
   }
 
@@ -680,7 +670,7 @@ export default function ArbolOptimo() {
                   disabled={calculando}
                   onClick={calcularArbol}
                 >
-                  {calculando ? "Calculando..." : "Calcular árbol óptimo"}
+                  {calculando ? (fase === "conectando" ? "Conectando con el servidor…" : "Calculando…") : "Calcular árbol óptimo"}
                 </button>
               </div>
             </div>

@@ -1,0 +1,17 @@
+{
+  "git": {
+    "deploymentEnabled": false
+  },
+  "rewrites": [
+    { "source": "/series-deportivas", "destination": "/index.html" },
+    { "source": "/series-deportivas/", "destination": "/index.html" },
+    { "source": "/remplazo-equipos", "destination": "/index.html" },
+    { "source": "/remplazo-equipos/", "destination": "/index.html" },
+    { "source": "/Mochila", "destination": "/index.html" },
+    { "source": "/Mochila/", "destination": "/index.html" },
+    { "source": "/ArbolOptimo", "destination": "/index.html" },
+    { "source": "/ArbolOptimo/", "destination": "/index.html" },
+    { "source": "/multiplicacion-matrices", "destination": "/index.html" },
+    { "source": "/multiplicacion-matrices/", "destination": "/index.html" }
+  ]
+}
